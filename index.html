@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Envision Legacy — Bring cherished memories to life. Create AI avatars, clone voices, and animate photo books of your loved ones.">
+    <title>Envision Legacy — Where Memories Live Again</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav id="main-nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <img src="images/logo.png" alt="Envision Legacy logo" class="logo-img">
+                <span class="logo-text">Envision Legacy</span>
+            </a>
+            <div class="nav-links">
+                <a href="#memories" class="nav-link">Memories</a>
+                <a href="#services" class="nav-link">Services</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-cta">Get Started</a>
+            </div>
+            <button id="mobile-menu-btn" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero">
+        <div class="hero-bg">
+            <div class="hero-image-mosaic">
+                <img src="images/soldiers_homecoming.png" alt="" class="mosaic-img m1">
+                <img src="images/couple_dancing.png" alt="" class="mosaic-img m2">
+                <img src="images/grandpa_fishing.png" alt="" class="mosaic-img m3">
+                <img src="images/wedding_portrait.png" alt="" class="mosaic-img m4">
+            </div>
+            <div class="hero-overlay"></div>
+        </div>
+        <div class="hero-content">
+            <p class="hero-badge">✦ AI-Powered Memory Preservation</p>
+            <h1 class="hero-title">ENVISION<br>LEGACY</h1>
+            <div class="hero-divider"></div>
+            <p class="hero-subtitle">Where Memories Live Again</p>
+            <p class="hero-tagline">Bring cherished photographs to life with AI — create avatars,<br>hear their voice, relive their stories.</p>
+            <div class="hero-actions">
+                <a href="#contact" class="btn-primary">
+                    <span>Get Started</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+                <a href="#about" class="btn-secondary">Learn More</a>
+            </div>
+        </div>
+        <div class="hero-scroll-hint">
+            <span>Scroll to explore</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+    </section>
+
+    <!-- Memories Section -->
+    <section id="memories">
+        <div class="section-header">
+            <p class="section-label">The Collection</p>
+            <h2 class="section-title">Cherished Memories</h2>
+            <p class="section-desc">Click on any photograph to explore its story and bring it to life with AI.</p>
+        </div>
+        <div class="memories-grid">
+
+            <div class="polaroid-card" data-index="0">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/grandma_child.png" alt="Grandmother with grandchild on porch swing" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Grandma's Porch, 1947</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="1">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/father_son_bike.png" alt="Father teaching son to ride a bicycle" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">First Ride, 1954</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="2">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/couple_dancing.png" alt="Young couple dancing at family gathering" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">The Dance, 1963</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="3">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/soldiers_homecoming.png" alt="Soldier reuniting with wife at train station" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Welcome Home, 1945</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="4">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/family_picnic.png" alt="Family picnic in the park" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Sunday in the Park, 1955</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="5">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/grandpa_fishing.png" alt="Grandfather fishing with grandson at sunset" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">At the Lake, 1962</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="6">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/wedding_portrait.png" alt="Bride and groom in front of church" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">The Wedding, 1948</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="7">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/mother_daughter.png" alt="Mother braiding daughters hair in kitchen" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Morning Ritual, 1952</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="8">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/kids_playing.png" alt="Children playing in backyard sprinkler" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Summer Days, 1965</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="9">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/birthday_party.png" alt="Child blowing out birthday candles" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Make a Wish, 1957</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="10">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/elderly_couple_bench.png" alt="Elderly couple holding hands on park bench" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Golden Years, 1974</div>
+                </div>
+            </div>
+
+            <div class="polaroid-card" data-index="11">
+                <div class="card-inner">
+                    <div class="image-container">
+                        <img src="images/graduation_day.png" alt="Daughter hugging father at graduation" loading="lazy">
+                        <div class="film-grain"></div>
+                        <div class="glow-overlay"></div>
+                    </div>
+                    <div class="card-caption">Graduation Day, 1966</div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services">
+        <div class="section-header">
+            <p class="section-label">What We Offer</p>
+            <h2 class="section-title">Bring Memories to Life</h2>
+            <p class="section-desc">State-of-the-art AI to preserve, animate, and interact with your most precious memories.</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-card-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <h3>Animate Photos</h3>
+                <p>Upload old photographs and watch them come to life with AI-generated motion and detail. See the moments as if they were happening now.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-card-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </div>
+                <h3>Voice Cloning</h3>
+                <p>Recreate the voice of someone you've lost from old recordings. Have conversations that feel real with AI-generated speech.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-card-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <h3>AI Avatars</h3>
+                <p>Create interactive digital avatars from photos, old letters, and family stories. Keep their legacy alive for future generations.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-card-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                <h3>Living Photo Books</h3>
+                <p>Turn static photo albums into animated, immersive experiences your whole family can enjoy together.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about">
+        <div class="about-inner">
+            <div class="about-text">
+                <p class="section-label">Our Mission</p>
+                <h2 class="section-title">About Envision Legacy</h2>
+                <p>Envision Legacy is a platform that helps you preserve and relive precious memories of your loved ones through the power of AI. We believe that every story deserves to be told, every voice deserves to be heard, and every memory deserves to live on.</p>
+                <p>Using cutting-edge artificial intelligence, we transform static photographs into living, breathing moments. Whether it's seeing your grandmother smile again, hearing your grandfather's voice, or watching your parents' wedding come to life — we make it possible.</p>
+                <a href="#contact" class="btn-primary">
+                    <span>Start Your Journey</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            <div class="about-image">
+                <div class="about-polaroid">
+                    <img src="images/elderly_couple_bench.png" alt="Elderly couple on park bench">
+                    <span>Golden Years, 1974</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact / Signup Section -->
+    <section id="contact">
+        <div class="contact-inner">
+            <div class="contact-text">
+                <p class="section-label">Get Started</p>
+                <h2 class="section-title">Preserve Your<br>Memories Today</h2>
+                <p class="contact-desc">Tell us about the memories you'd like to bring back to life. We'll reach out personally to discuss how we can help preserve your family's legacy.</p>
+                <div class="contact-features">
+                    <div class="contact-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Free consultation call</span>
+                    </div>
+                    <div class="contact-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Custom pricing for every project</span>
+                    </div>
+                    <div class="contact-feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Results in as fast as 24 hours</span>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-form-wrapper">
+                <form id="signup-form" action="https://formspree.io/f/xqaqjkdl" method="POST">
+                    <div class="form-group">
+                        <label for="form-name">Full Name *</label>
+                        <input type="text" id="form-name" name="name" placeholder="Your full name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="form-email">Email *</label>
+                            <input type="email" id="form-email" name="email" placeholder="you@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-phone">Phone</label>
+                            <input type="tel" id="form-phone" name="phone" placeholder="(555) 000-0000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-service">Service Interest *</label>
+                        <select id="form-service" name="service" required>
+                            <option value="" disabled selected>Select a service</option>
+                            <option value="animate">Animate Photos</option>
+                            <option value="voice">Voice Cloning</option>
+                            <option value="avatar">AI Avatar</option>
+                            <option value="photobook">Living Photo Book</option>
+                            <option value="bundle">Full Legacy Bundle</option>
+                            <option value="other">Other / Not Sure</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-message">Tell Us About Your Memory</label>
+                        <textarea id="form-message" name="message" rows="4" placeholder="Describe the photos or memories you'd like to bring to life..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <span>Submit Request</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                    <p class="form-note">We'll respond within 24 hours. Your information is never shared.</p>
+                </form>
+                <div id="form-success" style="display:none;">
+                    <div class="success-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <h3>Thank You!</h3>
+                    <p>We've received your request and will reach out within 24 hours to discuss bringing your memories to life.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="logo-text">Envision Legacy</span>
+                <p>Where Memories Live Again</p>
+            </div>
+            <div class="footer-links">
+                <a href="#memories">Memories</a>
+                <a href="#services">Services</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="footer-copy">
+                <p>&copy; 2026 Envision Legacy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal-hidden">
+        <div id="modal-backdrop"></div>
+        <div id="modal-content">
+            <button id="modal-close" aria-label="Close modal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div id="modal-left">
+                <p id="modal-date"></p>
+                <h2 id="modal-title"></h2>
+                <p id="modal-description"></p>
+                <div id="modal-services">
+                    <h3>Bring This Memory to Life</h3>
+                    <div class="service-option" id="svc-animate">
+                        <div class="svc-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </div>
+                        <div>
+                            <strong>Animate Photo</strong>
+                            <p>Watch this still image come to life with AI-generated motion</p>
+                        </div>
+                    </div>
+                    <div class="service-option" id="svc-voice">
+                        <div class="svc-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </div>
+                        <div>
+                            <strong>Clone Voice</strong>
+                            <p>Recreate their voice from recordings and speak with them again</p>
+                        </div>
+                    </div>
+                    <div class="service-option" id="svc-avatar">
+                        <div class="svc-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div>
+                            <strong>Create Avatar</strong>
+                            <p>Build an interactive AI avatar from photos, letters &amp; memories</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-right">
+                <div id="modal-image-frame">
+                    <img id="modal-image" src="" alt="">
+                    <video id="modal-video" loop muted playsinline style="display:none;"></video>
+                    <div id="modal-image-grain"></div>
+                    <div id="video-loader" style="display:none;">
+                        <div class="loader-spinner"></div>
+                        <p>Generating animation&hellip;</p>
+                    </div>
+                </div>
+                <div id="modal-toggle">
+                    <span class="toggle-label active" id="toggle-original">Original</span>
+                    <div id="toggle-switch">
+                        <div id="toggle-knob"></div>
+                    </div>
+                    <span class="toggle-label" id="toggle-animated">Animated</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
