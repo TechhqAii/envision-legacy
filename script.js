@@ -185,12 +185,70 @@
                 return videoUrl;
             }
         } catch (e) {
-            // Network error — assume no video
+            // fetch fails on file:// — try loading directly via video element
+            const canPlay = await new Promise((resolve) => {
+                const testVideo = document.createElement('video');
+                testVideo.preload = 'metadata';
+                testVideo.onloadedmetadata = () => resolve(true);
+                testVideo.onerror = () => resolve(false);
+                testVideo.src = videoUrl;
+                // Timeout fallback in case neither event fires
+                setTimeout(() => resolve(false), 2000);
+            });
+            if (canPlay) {
+                videoCache[index] = videoUrl;
+                return videoUrl;
+            }
         }
 
         videoCache[index] = false;
         return null;
     }
+
+    // --- Hover-to-Play Video on Cards ---
+    const cardVideos = {}; // index -> video element
+
+    // Preload video availability for all cards
+    cards.forEach((card, index) => {
+        getVideoUrl(index).then(url => {
+            if (url) {
+                // Create a video element for this card
+                const video = document.createElement('video');
+                video.className = 'card-video';
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.preload = 'auto';
+                video.src = url;
+                video.style.display = 'none';
+                const container = card.querySelector('.image-container');
+                container.appendChild(video);
+                cardVideos[index] = video;
+                // Mark card as having video
+                card.classList.add('has-video');
+            }
+        });
+    });
+
+    // Hover handlers
+    cards.forEach((card, index) => {
+        card.addEventListener('mouseenter', () => {
+            const video = cardVideos[index];
+            if (video) {
+                video.style.display = 'block';
+                video.currentTime = 0;
+                video.play().catch(() => {});
+            }
+        });
+
+        card.addEventListener('mouseleave', () => {
+            const video = cardVideos[index];
+            if (video) {
+                video.pause();
+                video.style.display = 'none';
+            }
+        });
+    });
 
     // --- Card Clicks (open detail) ---
     cards.forEach((card, index) => {
@@ -198,6 +256,12 @@
             const data = photoData[index];
             if (!data) return;
             currentPhotoIndex = index;
+            // Pause any playing card video
+            const cardVid = cardVideos[index];
+            if (cardVid) {
+                cardVid.pause();
+                cardVid.style.display = 'none';
+            }
             openDetail(data);
         });
     });
@@ -212,7 +276,7 @@
 
         // Reset toggle — show original image
         isAnimated = false;
-        modalImage.style.display = 'block';
+        modalImage.style.visibility = 'visible';
         modalImage.classList.remove('animated');
         modalVideo.style.display = 'none';
         modalVideo.pause();
@@ -259,7 +323,7 @@
                 // Show video, hide image
                 modalVideo.src = url;
                 modalVideo.style.display = 'block';
-                modalImage.style.display = 'none';
+                modalImage.style.visibility = 'hidden';
                 modalVideo.play().catch(() => {});
             } else {
                 // No video available — show CSS fallback + badge
@@ -276,7 +340,7 @@
             toggleAnimated.classList.remove('active');
 
             // Show image, hide video
-            modalImage.style.display = 'block';
+            modalImage.style.visibility = 'visible';
             modalImage.classList.remove('animated');
             modalVideo.style.display = 'none';
             modalVideo.pause();
