@@ -534,8 +534,6 @@ body {
 
 .polaroid-card:hover .image-container img {
     filter: grayscale(0%) sepia(0%) contrast(1.05) brightness(1.02) saturate(1.15);
-    transform: scale(1.06);
-    animation: subtleMotion 4s ease-in-out infinite;
 }
 
 .polaroid-card:hover .film-grain {
@@ -551,11 +549,11 @@ body {
 }
 
 @keyframes subtleMotion {
-    0%   { transform: scale(1.06) translate(0, 0); }
-    25%  { transform: scale(1.08) translate(-4px, -2px); }
-    50%  { transform: scale(1.09) translate(2px, -4px); }
-    75%  { transform: scale(1.08) translate(4px, 1px); }
-    100% { transform: scale(1.06) translate(0, 0); }
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(-2px, -1px); }
+    50%  { transform: translate(1px, -2px); }
+    75%  { transform: translate(2px, 1px); }
+    100% { transform: translate(0, 0); }
 }
 
 /* Sparkle on hover */
@@ -1192,16 +1190,15 @@ body {
 
 #modal-image.animated {
     filter: saturate(1.3) contrast(1.05) brightness(1.05);
-    animation: modalMotion 5s ease-in-out infinite;
 }
 
 @keyframes modalMotion {
-    0%   { transform: scale(1) translate(0, 0); }
-    20%  { transform: scale(1.03) translate(-4px, -2px); }
-    40%  { transform: scale(1.05) translate(2px, -4px); }
-    60%  { transform: scale(1.03) translate(4px, 1px); }
-    80%  { transform: scale(1.02) translate(-2px, 3px); }
-    100% { transform: scale(1) translate(0, 0); }
+    0%   { transform: translate(0, 0); }
+    20%  { transform: translate(-2px, -1px); }
+    40%  { transform: translate(1px, -2px); }
+    60%  { transform: translate(2px, 1px); }
+    80%  { transform: translate(-1px, 1px); }
+    100% { transform: translate(0, 0); }
 }
 
 #modal-image-grain {
