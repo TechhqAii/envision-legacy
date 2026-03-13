@@ -63,10 +63,27 @@ export default async function handler(req, res) {
       console.error('Owner notification email failed:', emailErr);
     }
 
-    // TODO Phase 2: Trigger automated animation generation here
-    // if (service === 'animate' || service === 'bundle') {
-    //   await triggerAnimation(uploadUrl, email, customerName);
-    // }
+    // Phase 2: Trigger automated animation generation
+    if (service === 'animate' || service === 'bundle') {
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'https://envision-legacy.vercel.app';
+
+      // Fire-and-forget: don't await — animation takes minutes
+      fetch(`${baseUrl}/api/generate-animation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+        body: JSON.stringify({
+          imageUrl: uploadUrl,
+          customerEmail: email,
+          customerName,
+          prompt: message || undefined,
+        }),
+      }).catch(err => console.error('Failed to trigger animation:', err));
+    }
   }
 
   return res.status(200).json({ received: true });
