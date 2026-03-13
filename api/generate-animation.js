@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Google Veo via Gemini API ---
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
-const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-001';
+const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-generate-preview';
 const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const MAX_POLLS = 24; // 24 polls × 15s delay = 6 minutes max
 
@@ -90,8 +90,8 @@ export default async function handler(req, res) {
     const motionPrompt = prompt ||
       'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
 
-    // Submit to Veo
-    const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:generateVideos?key=${apiKey}`, {
+    // Submit to Veo via predictLongRunning
+    const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
