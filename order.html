@@ -570,7 +570,12 @@
         function showError(msg) {
             errorBanner.textContent = msg;
             errorBanner.classList.add('visible');
+            errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => errorBanner.classList.remove('visible'), 5000);
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
         function updateSteps(active) {
@@ -599,7 +604,7 @@
             summaryFile.textContent = uploadedFileName || '—';
             summaryPrice.textContent = hasService ? `$${selectedPrice}` : '$0';
 
-            btnCheckout.disabled = !(hasService && hasFile && hasName && hasEmail);
+            btnCheckout.disabled = !(hasService && hasFile && hasName && hasEmail && isValidEmail(hasEmail));
         }
 
         // Service instructions by type
@@ -759,6 +764,11 @@
 
             if (!selectedService || !uploadedFileUrl || !name || !email) {
                 showError('Please complete all required fields.');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError('Please enter a valid email address (e.g. you@example.com)');
                 return;
             }
 
