@@ -6,7 +6,6 @@
   "dependencies": {
     "stripe": "^14.0.0",
     "resend": "^3.0.0",
-    "@vercel/blob": "^0.27.0",
-    "@google/genai": "^1.44.0"
+    "@vercel/blob": "^0.27.0"
   }
 }
