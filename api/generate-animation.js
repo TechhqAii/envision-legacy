@@ -18,9 +18,7 @@ async function downloadImageAsBase64(imageUrl) {
 }
 
 async function schedulePollViaQStash(payload) {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'https://envision-legacy.vercel.app';
+  const baseUrl = 'https://envision-legacy.vercel.app';
 
   const resp = await fetch(`${QSTASH_API}/publish/${baseUrl}/api/generate-animation`, {
     method: 'POST',

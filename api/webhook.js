@@ -65,9 +65,7 @@ export default async function handler(req, res) {
 
     // Phase 2: Trigger automated animation generation via QStash
     if (service === 'animate' || service === 'bundle') {
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'https://envision-legacy.vercel.app';
+      const baseUrl = 'https://envision-legacy.vercel.app';
 
       try {
         const targetUrl = baseUrl + '/api/generate-animation';
