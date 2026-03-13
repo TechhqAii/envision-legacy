@@ -565,14 +565,7 @@
         }
 
         // Auto-select service from URL param (e.g. ?service=animate)
-        const preselect = urlParams.get('service');
-        if (preselect) {
-            const card = document.querySelector(`.svc-card[data-service="${preselect}"]`);
-            if (card) {
-                card.click();
-                window.history.replaceState({}, '', window.location.pathname);
-            }
-        }
+        // (deferred until after click handlers are registered below)
 
         function showError(msg) {
             errorBanner.textContent = msg;
@@ -611,7 +604,7 @@
 
         // Service instructions by type
         const instructions = {
-            animate: 'Upload the photo you'd like to animate. We accept JPG, PNG, and WebP formats.',
+            animate: "Upload the photo you'd like to animate. We accept JPG, PNG, and WebP formats.",
             voice: 'Upload a voice recording (30+ seconds recommended). We accept MP3, WAV, and M4A.',
             avatar: 'Upload photos of the person for the avatar. Clear face photos work best.',
             bundle: 'Upload a photo and/or voice recording. You can email additional files after ordering.'
@@ -645,6 +638,16 @@
                 }, 200);
             });
         });
+
+        // --- Auto-select from URL param (after handlers registered) ---
+        const preselect = urlParams.get('service');
+        if (preselect) {
+            const card = document.querySelector(`.svc-card[data-service="${preselect}"]`);
+            if (card) {
+                card.click();
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
 
         // --- File Upload ---
         dropZone.addEventListener('click', () => fileInput.click());
