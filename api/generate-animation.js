@@ -90,7 +90,42 @@ export default async function handler(req, res) {
     const motionPrompt = prompt ||
       'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
 
-    // Submit to Veo via predictLongRunning (official Gemini API format)
+    // Step 1: Upload image to Google File API (Veo doesn't support inlineData)
+    console.log(`   📤 Uploading image to Google File API...`);
+    const imageBuffer = Buffer.from(base64, 'base64');
+    const boundary = 'BOUNDARY_' + Date.now();
+    const metadata = JSON.stringify({ file: { displayName: 'customer_photo' } });
+    
+    const multipartBody = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`),
+      imageBuffer,
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+
+    const uploadResp = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+        'Content-Length': multipartBody.length.toString(),
+      },
+      body: multipartBody,
+    });
+
+    if (!uploadResp.ok) {
+      const uploadErr = await uploadResp.text();
+      console.error('File API upload error:', uploadResp.status, uploadErr);
+      throw new Error(`File API upload error ${uploadResp.status}: ${uploadErr}`);
+    }
+
+    const uploadData = await uploadResp.json();
+    const fileUri = uploadData.file?.uri;
+    console.log(`   ✅ File uploaded: ${fileUri}`);
+
+    if (!fileUri) {
+      throw new Error('File API did not return a file URI');
+    }
+
+    // Step 2: Submit to Veo via predictLongRunning with fileUri
     const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning`, {
       method: 'POST',
       headers: {
@@ -100,15 +135,10 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         instances: [{
           prompt: motionPrompt,
-          referenceImages: [{
-            image: {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64,
-              },
-            },
-            referenceType: 'asset',
-          }],
+          image: {
+            fileUri: fileUri,
+            mimeType: mimeType,
+          },
         }],
       }),
     });
