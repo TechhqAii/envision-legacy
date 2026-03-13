@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { put } from '@vercel/blob';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -7,6 +8,37 @@ const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-preview';
 const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const MAX_POLLS = 24;
+
+// Download video from Google (requires API key) and re-upload to Vercel Blob (public)
+async function downloadAndReupload(googleVideoUrl) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  console.log(`   📥 Downloading video from Google...`);
+  
+  // Google video URLs need the API key in the header
+  const resp = await fetch(googleVideoUrl, {
+    headers: { 'x-goog-api-key': apiKey },
+    redirect: 'follow',
+  });
+  
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error(`   Video download failed: ${resp.status}`, err);
+    throw new Error(`Video download failed: ${resp.status}`);
+  }
+  
+  const videoBuffer = Buffer.from(await resp.arrayBuffer());
+  console.log(`   Downloaded ${videoBuffer.length} bytes`);
+  
+  // Upload to Vercel Blob
+  const filename = `animations/veo-${Date.now()}.mp4`;
+  const blob = await put(filename, videoBuffer, {
+    access: 'public',
+    contentType: 'video/mp4',
+  });
+  
+  console.log(`   ☁️ Uploaded to Vercel Blob: ${blob.url}`);
+  return blob.url;
+}
 
 async function downloadImageAsBase64(imageUrl) {
   const resp = await fetch(imageUrl);
@@ -154,8 +186,9 @@ async function processVeoResponse(data, customerEmail, customerName, imageUrl, r
     data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
   if (directUri) {
     console.log(`   ✅ Video returned directly: ${directUri}`);
-    await sendDeliveryEmails(customerEmail, customerName, directUri);
-    return res.status(200).json({ success: true, videoUrl: directUri });
+    const publicUrl = await downloadAndReupload(directUri);
+    await sendDeliveryEmails(customerEmail, customerName, publicUrl);
+    return res.status(200).json({ success: true, videoUrl: publicUrl });
   }
 
   const opName = data.name || data.operationName;
@@ -209,8 +242,9 @@ async function handlePoll(req, res, body) {
       if (!videoUrl) throw new Error('Veo completed but no video URL found');
 
       console.log(`   ✅ Animation complete: ${videoUrl}`);
-      await sendDeliveryEmails(customerEmail, customerName, videoUrl);
-      return res.status(200).json({ success: true, videoUrl });
+      const publicUrl = await downloadAndReupload(videoUrl);
+      await sendDeliveryEmails(customerEmail, customerName, publicUrl);
+      return res.status(200).json({ success: true, videoUrl: publicUrl });
     }
 
     console.log(`   ⏳ Not ready, scheduling poll #${pollCount + 1}...`);
