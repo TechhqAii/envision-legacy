@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmed — Envision Legacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ede8e1;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 40px 24px;
+        }
+        .success-card {
+            max-width: 560px; width: 100%;
+            background: #f8f4ee;
+            border: 1px solid #e8e0d4;
+            border-radius: 20px;
+            padding: 48px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+        }
+        .check-circle {
+            width: 72px; height: 72px; margin: 0 auto 24px;
+            background: #2ecc71; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            animation: pop 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        @keyframes pop {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .check-circle svg { color: white; }
+        h1 {
+            font-family: 'Anton', sans-serif;
+            font-size: 32px; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        .message {
+            color: #555; line-height: 1.7;
+            font-size: 15px; margin-bottom: 32px;
+        }
+        .highlight {
+            background: rgba(196, 121, 58, 0.1);
+            border: 1px solid rgba(196, 121, 58, 0.2);
+            border-radius: 12px; padding: 16px;
+            margin-bottom: 32px; text-align: left;
+        }
+        .highlight h3 {
+            font-size: 12px; font-weight: 700;
+            color: #c4793a; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .highlight ol {
+            padding-left: 20px; color: #555;
+            font-size: 13px; line-height: 1.8;
+        }
+        .btn-home {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #1a1a1a; color: #f8f4ee;
+            padding: 14px 32px; border-radius: 50px;
+            text-decoration: none; font-size: 14px;
+            font-weight: 600; letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        .btn-home:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="check-circle">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+        <h1>Order Confirmed!</h1>
+        <p class="message">
+            Thank you for your order! We've received your files and payment. A confirmation email is on its way.
+        </p>
+        <div class="highlight">
+            <h3>What Happens Next</h3>
+            <ol>
+                <li>Our AI processes your uploaded file</li>
+                <li>We quality-check the result</li>
+                <li>Your finished creation is emailed within 24 hours</li>
+            </ol>
+        </div>
+        <a href="index.html" class="btn-home">
+            ← Back to Envision Legacy
+        </a>
+    </div>
+</body>
+</html>

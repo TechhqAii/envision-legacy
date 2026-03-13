@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Order your AI-powered memory preservation — animate photos, clone voices, or create interactive avatars of loved ones.">
+    <title>Order — Envision Legacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ede8e1;
+            --bg-dark: #1a1a1a;
+            --card-bg: #f8f4ee;
+            --card-border: #e8e0d4;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555;
+            --text-muted: #8b775a;
+            --accent: #c4793a;
+            --accent-light: #d4915a;
+            --accent-glow: rgba(196, 121, 58, 0.15);
+            --shadow-soft: rgba(0, 0, 0, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(237, 232, 225, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 16px 32px;
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--text-primary);
+        }
+        .nav-logo img { height: 32px; width: 32px; border-radius: 50%; }
+        .logo-text {
+            font-family: 'Anton', sans-serif;
+            font-size: 18px; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .nav-back {
+            font-size: 14px; color: var(--text-muted);
+            text-decoration: none; transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--accent); }
+
+        /* Hero */
+        .order-hero {
+            padding: 60px 32px 40px;
+            text-align: center; max-width: 800px; margin: 0 auto;
+        }
+        .order-hero h1 {
+            font-family: 'Anton', sans-serif;
+            font-size: 42px; letter-spacing: 3px;
+            text-transform: uppercase; margin-bottom: 12px;
+        }
+        .order-hero p {
+            font-size: 16px; color: var(--text-secondary);
+            line-height: 1.7; max-width: 520px; margin: 0 auto;
+        }
+
+        /* Steps */
+        .order-steps {
+            display: flex; justify-content: center; gap: 40px;
+            padding: 0 32px 40px; max-width: 700px; margin: 0 auto;
+        }
+        .step {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; color: var(--text-muted);
+        }
+        .step-num {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--text-primary); color: var(--card-bg);
+            border-radius: 50%; font-weight: 700; font-size: 12px;
+        }
+        .step.active .step-num { background: var(--accent); }
+        .step.active { color: var(--text-primary); font-weight: 600; }
+        .step.completed .step-num { background: #2ecc71; }
+
+        /* Service Cards */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px; max-width: 1200px;
+            margin: 0 auto; padding: 0 32px 60px;
+        }
+        .svc-card {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 16px; padding: 28px;
+            cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+        }
+        .svc-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px var(--shadow-soft);
+             border-color: var(--accent);
+        }
+        .svc-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow), 0 12px 40px var(--shadow-soft);
+        }
+        .svc-card.selected::after {
+            content: '✓';
+            position: absolute; top: 14px; right: 14px;
+            width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent); color: white;
+            border-radius: 50%; font-size: 13px; font-weight: 700;
+        }
+        .svc-icon-wrap {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent-glow); color: var(--accent);
+            border-radius: 12px; margin-bottom: 16px;
+        }
+        .svc-card h3 {
+            font-family: 'Anton', sans-serif;
+            font-size: 20px; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 6px;
+        }
+        .svc-card .desc {
+            font-size: 13px; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 16px;
+        }
+        .svc-price {
+            font-family: 'Anton', sans-serif;
+            font-size: 28px; color: var(--accent);
+            letter-spacing: 1px;
+        }
+        .svc-price span {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px; color: var(--text-muted);
+            font-weight: 400; letter-spacing: 0;
+        }
+        .best-value {
+            position: absolute; top: -10px; left: 20px;
+            background: var(--accent); color: white;
+            font-size: 10px; font-weight: 700; letter-spacing: 1px;
+            padding: 4px 12px; border-radius: 20px; text-transform: uppercase;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            max-width: 700px; margin: 0 auto;
+            padding: 0 32px 60px;
+            display: none;
+        }
+        .upload-section.visible { display: block; }
+        .section-heading {
+            font-family: 'Anton', sans-serif;
+            font-size: 24px; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .section-sub {
+            font-size: 14px; color: var(--text-secondary);
+            margin-bottom: 24px; line-height: 1.6;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--card-border);
+            border-radius: 16px; padding: 48px 32px;
+            text-align: center; background: var(--card-bg);
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(196, 121, 58, 0.05);
+        }
+        .drop-zone svg { color: var(--accent); margin-bottom: 12px; }
+        .drop-zone p { font-size: 14px; color: var(--text-muted); }
+        .drop-zone .browse {
+            color: var(--accent); font-weight: 600;
+            text-decoration: underline; cursor: pointer;
+        }
+        .file-input { display: none; }
+
+        .upload-preview {
+            display: none; margin-top: 16px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 16px;
+            align-items: center; gap: 14px;
+        }
+        .upload-preview.visible { display: flex; }
+        .upload-preview img, .upload-preview video {
+            width: 80px; height: 80px;
+            object-fit: cover; border-radius: 8px;
+        }
+        .upload-preview .file-info { flex: 1; }
+        .upload-preview .file-name {
+            font-weight: 600; font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .upload-preview .file-size {
+            font-size: 12px; color: var(--text-muted);
+        }
+        .upload-preview .remove-btn {
+            background: none; border: none;
+            color: #e74c3c; cursor: pointer;
+            font-size: 18px; padding: 8px;
+        }
+
+        .upload-progress {
+            display: none; margin-top: 12px;
+        }
+        .upload-progress.visible { display: block; }
+        .progress-bar {
+            height: 4px; background: var(--card-border);
+            border-radius: 4px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: var(--accent);
+            border-radius: 4px; width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Contact Info */
+        .contact-section {
+            max-width: 700px; margin: 0 auto;
+            padding: 0 32px 40px;
+            display: none;
+        }
+        .contact-section.visible { display: block; }
+
+        .form-row { display: flex; gap: 14px; }
+        .form-row .form-group { flex: 1; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600;
+            letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 13px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px; font-family: 'Inter', sans-serif;
+            font-size: 14px; color: var(--text-primary);
+            transition: all 0.3s; outline: none;
+        }
+        .form-group input::placeholder, .form-group textarea::placeholder {
+            color: #bbb;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+
+        /* CTA */
+        .cta-section {
+            max-width: 700px; margin: 0 auto;
+            padding: 0 32px 80px; text-align: center;
+            display: none;
+        }
+        .cta-section.visible { display: block; }
+
+        .order-summary {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 24px; margin-bottom: 24px;
+            text-align: left;
+        }
+        .order-summary h3 {
+            font-family: 'Anton', sans-serif;
+            font-size: 14px; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+        .summary-row {
+            display: flex; justify-content: space-between;
+            padding: 8px 0; font-size: 14px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .summary-row:last-child { border-bottom: none; }
+        .summary-row .label { color: var(--text-secondary); }
+        .summary-row .value { font-weight: 600; }
+        .summary-total {
+            display: flex; justify-content: space-between;
+            padding: 14px 0 0; margin-top: 8px;
+            border-top: 2px solid var(--text-primary);
+            font-size: 18px; font-weight: 700;
+        }
+        .summary-total .price { color: var(--accent); font-family: 'Anton', sans-serif; font-size: 24px; }
+
+        .btn-checkout {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--accent); color: white;
+            border: none; padding: 16px 40px;
+            border-radius: 50px; font-family: 'Inter', sans-serif;
+            font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            letter-spacing: 0.5px; width: 100%;
+            justify-content: center;
+        }
+        .btn-checkout:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(196, 121, 58, 0.4);
+        }
+        .btn-checkout:disabled {
+            opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none;
+        }
+        .btn-checkout svg { transition: transform 0.3s; }
+        .btn-checkout:hover svg { transform: translateX(4px); }
+
+        .security-note {
+            font-size: 11px; color: var(--text-muted);
+            margin-top: 14px; display: flex;
+            align-items: center; justify-content: center; gap: 6px;
+        }
+
+        /* Error */
+        .error-banner {
+            display: none; max-width: 700px; margin: 0 auto 20px;
+            padding: 12px 20px; background: #fef2f2;
+            border: 1px solid #fecaca; border-radius: 10px;
+            color: #991b1b; font-size: 14px; text-align: center;
+        }
+        .error-banner.visible { display: block; }
+
+        /* Cancelled banner */
+        .cancelled-banner {
+            display: none; max-width: 700px; margin: 0 auto 20px;
+            padding: 12px 20px; background: #fffbeb;
+            border: 1px solid #fde68a; border-radius: 10px;
+            color: #92400e; font-size: 14px; text-align: center;
+        }
+        .cancelled-banner.visible { display: block; }
+
+        /* Footer */
+        footer {
+            background: var(--bg-dark); color: rgba(248, 244, 238, 0.6);
+            padding: 32px;
+        }
+        .footer-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; align-items: center;
+            justify-content: space-between; flex-wrap: wrap; gap: 16px;
+        }
+        .footer-inner a { color: rgba(248, 244, 238, 0.5); text-decoration: none; font-size: 13px; }
+        .footer-inner a:hover { color: var(--accent-light); }
+        .footer-copy { font-size: 12px; color: rgba(248, 244, 238, 0.3); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .order-hero h1 { font-size: 32px; }
+            .order-steps { flex-direction: column; gap: 12px; align-items: flex-start; }
+            .service-grid { grid-template-columns: 1fr; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="images/logo.png" alt="Envision Legacy logo">
+                <span class="logo-text">Envision Legacy</span>
+            </a>
+            <a href="index.html" class="nav-back">← Back to Gallery</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="order-hero">
+        <h1>Bring Your Memory to Life</h1>
+        <p>Choose a service, upload your photo or recording, and we'll do the rest. Your finished creation will be delivered within 24 hours.</p>
+    </section>
+
+    <!-- Steps -->
+    <div class="order-steps">
+        <div class="step active" id="step-1"><span class="step-num">1</span> Choose Service</div>
+        <div class="step" id="step-2"><span class="step-num">2</span> Upload File</div>
+        <div class="step" id="step-3"><span class="step-num">3</span> Checkout</div>
+    </div>
+
+    <!-- Cancelled Banner -->
+    <div class="cancelled-banner" id="cancelled-banner">
+        Payment was cancelled. No charges were made — feel free to try again whenever you're ready.
+    </div>
+
+    <!-- Error Banner -->
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- Step 1: Service Selection -->
+    <div class="service-grid" id="service-grid">
+        <div class="svc-card" data-service="animate" data-price="29">
+            <div class="svc-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <h3>Animate Photo</h3>
+            <p class="desc">Watch your still photo come alive with AI-generated motion. Perfect for bringing portraits and family photos to life.</p>
+            <div class="svc-price">$29 <span>per photo</span></div>
+        </div>
+
+        <div class="svc-card" data-service="voice" data-price="49">
+            <div class="svc-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
+            <h3>Clone Voice</h3>
+            <p class="desc">Recreate their voice from a recording. Hear them speak new words, tell stories, or say the things left unsaid.</p>
+            <div class="svc-price">$49 <span>per voice</span></div>
+        </div>
+
+        <div class="svc-card" data-service="avatar" data-price="99">
+            <div class="svc-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3>AI Avatar</h3>
+            <p class="desc">Build an interactive, speaking digital avatar from photos and memories. Have a conversation with them again.</p>
+            <div class="svc-price">$99 <span>per avatar</span></div>
+        </div>
+
+        <div class="svc-card" data-service="bundle" data-price="149">
+            <div class="best-value">Best Value</div>
+            <div class="svc-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Legacy Bundle</h3>
+            <p class="desc">The complete experience — animated photo, cloned voice, and interactive avatar. Everything you need to preserve a legacy.</p>
+            <div class="svc-price">$149 <span>all three services</span></div>
+        </div>
+    </div>
+
+    <!-- Step 2: Upload -->
+    <section class="upload-section" id="upload-section">
+        <h2 class="section-heading">Upload Your File</h2>
+        <p class="section-sub" id="upload-instructions">Upload the photo you'd like to animate. We accept JPG, PNG, and WebP formats.</p>
+
+        <div class="drop-zone" id="drop-zone">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Drag and drop your file here, or <span class="browse">browse</span></p>
+            <p style="font-size:12px; margin-top:8px; color:#bbb;">Max 25MB</p>
+        </div>
+        <input type="file" class="file-input" id="file-input" accept="image/*,audio/*">
+
+        <div class="upload-preview" id="upload-preview">
+            <img id="preview-img" src="" alt="">
+            <div class="file-info">
+                <div class="file-name" id="preview-name"></div>
+                <div class="file-size" id="preview-size"></div>
+            </div>
+            <button class="remove-btn" id="remove-file" title="Remove file">✕</button>
+        </div>
+
+        <div class="upload-progress" id="upload-progress">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+    </section>
+
+    <!-- Step 3: Contact + Checkout -->
+    <section class="contact-section" id="contact-section">
+        <h2 class="section-heading">Your Details</h2>
+        <p class="section-sub">Tell us a bit about yourself and, if you'd like, share the story behind this memory.</p>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="order-name">Full Name *</label>
+                <input type="text" id="order-name" placeholder="Your name" required>
+            </div>
+            <div class="form-group">
+                <label for="order-email">Email *</label>
+                <input type="email" id="order-email" placeholder="you@example.com" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="order-message">About This Memory (optional)</label>
+            <textarea id="order-message" placeholder="Tell us about the person in the photo, when it was taken, or any special requests..."></textarea>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section" id="cta-section">
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-row">
+                <span class="label">Service</span>
+                <span class="value" id="summary-service">—</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">File</span>
+                <span class="value" id="summary-file">—</span>
+            </div>
+            <div class="summary-total">
+                <span>Total</span>
+                <span class="price" id="summary-price">$0</span>
+            </div>
+        </div>
+
+        <button class="btn-checkout" id="btn-checkout" disabled>
+            <span>Proceed to Payment</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <div class="security-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Secure payment powered by Stripe. Your data is encrypted and never stored.
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-inner">
+            <span class="logo-text" style="color: #f8f4ee; font-size: 16px;">Envision Legacy</span>
+            <a href="index.html">← Back to Gallery</a>
+            <span class="footer-copy">© 2026 Envision Legacy</span>
+        </div>
+    </footer>
+
+    <script>
+    (() => {
+        'use strict';
+
+        // --- State ---
+        let selectedService = null;
+        let selectedPrice = 0;
+        let uploadedFileUrl = null;
+        let uploadedFileName = null;
+
+        // --- Elements ---
+        const serviceCards = document.querySelectorAll('.svc-card');
+        const uploadSection = document.getElementById('upload-section');
+        const contactSection = document.getElementById('contact-section');
+        const ctaSection = document.getElementById('cta-section');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadPreview = document.getElementById('upload-preview');
+        const previewImg = document.getElementById('preview-img');
+        const previewName = document.getElementById('preview-name');
+        const previewSize = document.getElementById('preview-size');
+        const removeFileBtn = document.getElementById('remove-file');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const uploadInstructions = document.getElementById('upload-instructions');
+        const summaryService = document.getElementById('summary-service');
+        const summaryFile = document.getElementById('summary-file');
+        const summaryPrice = document.getElementById('summary-price');
+        const btnCheckout = document.getElementById('btn-checkout');
+        const errorBanner = document.getElementById('error-banner');
+        const cancelledBanner = document.getElementById('cancelled-banner');
+
+        const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
+
+        // Cancelled check
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('cancelled') === 'true') {
+            cancelledBanner.classList.add('visible');
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        // Auto-select service from URL param (e.g. ?service=animate)
+        const preselect = urlParams.get('service');
+        if (preselect) {
+            const card = document.querySelector(`.svc-card[data-service="${preselect}"]`);
+            if (card) {
+                card.click();
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+
+        function showError(msg) {
+            errorBanner.textContent = msg;
+            errorBanner.classList.add('visible');
+            setTimeout(() => errorBanner.classList.remove('visible'), 5000);
+        }
+
+        function updateSteps(active) {
+            steps.forEach((s, i) => {
+                s.classList.remove('active', 'completed');
+                if (i + 1 < active) s.classList.add('completed');
+                else if (i + 1 === active) s.classList.add('active');
+            });
+        }
+
+        function updateUI() {
+            const hasService = !!selectedService;
+            const hasFile = !!uploadedFileUrl;
+            const hasName = document.getElementById('order-name').value.trim();
+            const hasEmail = document.getElementById('order-email').value.trim();
+
+            uploadSection.classList.toggle('visible', hasService);
+            contactSection.classList.toggle('visible', hasService && hasFile);
+            ctaSection.classList.toggle('visible', hasService && hasFile);
+
+            if (!hasService) updateSteps(1);
+            else if (!hasFile) updateSteps(2);
+            else updateSteps(3);
+
+            summaryService.textContent = hasService ? document.querySelector(`.svc-card[data-service="${selectedService}"] h3`).textContent : '—';
+            summaryFile.textContent = uploadedFileName || '—';
+            summaryPrice.textContent = hasService ? `$${selectedPrice}` : '$0';
+
+            btnCheckout.disabled = !(hasService && hasFile && hasName && hasEmail);
+        }
+
+        // Service instructions by type
+        const instructions = {
+            animate: 'Upload the photo you'd like to animate. We accept JPG, PNG, and WebP formats.',
+            voice: 'Upload a voice recording (30+ seconds recommended). We accept MP3, WAV, and M4A.',
+            avatar: 'Upload photos of the person for the avatar. Clear face photos work best.',
+            bundle: 'Upload a photo and/or voice recording. You can email additional files after ordering.'
+        };
+
+        const accepts = {
+            animate: 'image/*',
+            voice: 'audio/*',
+            avatar: 'image/*',
+            bundle: 'image/*,audio/*'
+        };
+
+        // --- Service Selection ---
+        serviceCards.forEach(card => {
+            card.addEventListener('click', () => {
+                serviceCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedService = card.dataset.service;
+                selectedPrice = parseInt(card.dataset.price);
+
+                uploadInstructions.textContent = instructions[selectedService];
+                fileInput.accept = accepts[selectedService];
+
+                // Reset upload if service changed
+                resetUpload();
+                updateUI();
+
+                // Smooth scroll to upload
+                setTimeout(() => {
+                    uploadSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 200);
+            });
+        });
+
+        // --- File Upload ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.querySelector('.browse').addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) handleFile(fileInput.files[0]);
+        });
+
+        removeFileBtn.addEventListener('click', resetUpload);
+
+        function resetUpload() {
+            uploadedFileUrl = null;
+            uploadedFileName = null;
+            fileInput.value = '';
+            uploadPreview.classList.remove('visible');
+            uploadProgress.classList.remove('visible');
+            dropZone.style.display = '';
+            updateUI();
+        }
+
+        async function handleFile(file) {
+            if (file.size > 25 * 1024 * 1024) {
+                showError('File is too large. Maximum size is 25MB.');
+                return;
+            }
+
+            // Show preview
+            uploadedFileName = file.name;
+            previewName.textContent = file.name;
+            previewSize.textContent = formatSize(file.size);
+
+            if (file.type.startsWith('image/')) {
+                previewImg.style.display = 'block';
+                previewImg.src = URL.createObjectURL(file);
+            } else {
+                previewImg.style.display = 'none';
+            }
+
+            uploadPreview.classList.add('visible');
+            dropZone.style.display = 'none';
+
+            // Upload to server
+            uploadProgress.classList.add('visible');
+            progressFill.style.width = '30%';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                progressFill.style.width = '60%';
+
+                const resp = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressFill.style.width = '90%';
+
+                if (!resp.ok) throw new Error('Upload failed');
+
+                const data = await resp.json();
+                uploadedFileUrl = data.url;
+                progressFill.style.width = '100%';
+
+                setTimeout(() => {
+                    uploadProgress.classList.remove('visible');
+                    updateUI();
+                    // Scroll to contact section
+                    setTimeout(() => {
+                        contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 200);
+                }, 500);
+            } catch (err) {
+                showError('File upload failed. Please try again.');
+                resetUpload();
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // --- Contact form listeners ---
+        document.getElementById('order-name').addEventListener('input', updateUI);
+        document.getElementById('order-email').addEventListener('input', updateUI);
+
+        // --- Checkout ---
+        btnCheckout.addEventListener('click', async () => {
+            const name = document.getElementById('order-name').value.trim();
+            const email = document.getElementById('order-email').value.trim();
+            const message = document.getElementById('order-message').value.trim();
+
+            if (!selectedService || !uploadedFileUrl || !name || !email) {
+                showError('Please complete all required fields.');
+                return;
+            }
+
+            btnCheckout.disabled = true;
+            btnCheckout.querySelector('span').textContent = 'Redirecting to payment...';
+
+            try {
+                const resp = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: selectedService,
+                        customerName: name,
+                        customerEmail: email,
+                        uploadUrl: uploadedFileUrl,
+                        message
+                    })
+                });
+
+                if (!resp.ok) throw new Error('Checkout failed');
+
+                const data = await resp.json();
+                window.location.href = data.url;
+            } catch (err) {
+                showError('Unable to start checkout. Please try again.');
+                btnCheckout.disabled = false;
+                btnCheckout.querySelector('span').textContent = 'Proceed to Payment';
+            }
+        });
+
+    })();
+    </script>
+
+</body>
+</html>

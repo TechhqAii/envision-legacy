@@ -351,6 +351,14 @@
     toggleOriginal.addEventListener('click', () => { if (isAnimated) toggleAnimation(); });
     toggleAnimated.addEventListener('click', () => { if (!isAnimated) toggleAnimation(); });
 
+    // --- Service option click → order page ---
+    const svcAnimate = document.getElementById('svc-animate');
+    const svcVoice = document.getElementById('svc-voice');
+    const svcAvatar = document.getElementById('svc-avatar');
+    if (svcAnimate) svcAnimate.addEventListener('click', () => { window.location.href = 'order.html?service=animate'; });
+    if (svcVoice) svcVoice.addEventListener('click', () => { window.location.href = 'order.html?service=voice'; });
+    if (svcAvatar) svcAvatar.addEventListener('click', () => { window.location.href = 'order.html?service=avatar'; });
+
     // --- Keyboard ---
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {

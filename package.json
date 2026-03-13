@@ -1,0 +1,11 @@
+{
+  "name": "envision-legacy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Envision Legacy — AI-powered memory preservation",
+  "dependencies": {
+    "stripe": "^14.0.0",
+    "resend": "^3.0.0",
+    "@vercel/blob": "^0.27.0"
+  }
+}
