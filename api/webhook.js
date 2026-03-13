@@ -75,7 +75,8 @@ export default async function handler(req, res) {
         console.log(`   QSTASH_TOKEN set: ${!!process.env.QSTASH_TOKEN}`);
         console.log(`   INTERNAL_API_SECRET set: ${!!process.env.INTERNAL_API_SECRET}`);
 
-        const qstashResp = await fetch('https://qstash.upstash.io/v2/publish/' + targetUrl, {
+        const qstashUrl = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
+        const qstashResp = await fetch(qstashUrl + '/publish/' + targetUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,

@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // --- Google Veo via Gemini API ---
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-001';
-const QSTASH_API = 'https://qstash.upstash.io/v2';
+const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const MAX_POLLS = 24; // 24 polls × 15s delay = 6 minutes max
 
 async function downloadImageAsBase64(imageUrl) {
