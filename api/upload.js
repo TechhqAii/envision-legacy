@@ -49,7 +49,6 @@ export default async function handler(req, res) {
     const blobPath = `uploads/${timestamp}-${safeName}`;
 
     const blob = await put(blobPath, fileBuffer, {
-      access: 'public',
       contentType: getContentType(filename),
     });
 
