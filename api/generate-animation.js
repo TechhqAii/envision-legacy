@@ -23,7 +23,7 @@ async function createVeoTask(imageUrl, prompt) {
   const { base64, mimeType } = await downloadImageAsBase64(imageUrl);
 
   const motionPrompt = prompt ||
-    'Gentle, subtle lifelike motion. Soft breathing, slight natural movement, warm and emotional atmosphere. Preserve the original composition.';
+    'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
 
   const resp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:generateVideos?key=${apiKey}`, {
     method: 'POST',
