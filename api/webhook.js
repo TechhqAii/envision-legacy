@@ -63,26 +63,32 @@ export default async function handler(req, res) {
       console.error('Owner notification email failed:', emailErr);
     }
 
-    // Phase 2: Trigger automated animation generation
+    // Phase 2: Trigger automated animation generation via QStash
     if (service === 'animate' || service === 'bundle') {
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : 'https://envision-legacy.vercel.app';
 
-      // Fire-and-forget: don't await — animation takes minutes
-      fetch(`${baseUrl}/api/generate-animation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
-        },
-        body: JSON.stringify({
-          imageUrl: uploadUrl,
-          customerEmail: email,
-          customerName,
-          prompt: message || undefined,
-        }),
-      }).catch(err => console.error('Failed to trigger animation:', err));
+      try {
+        const qstashResp = await fetch('https://qstash.upstash.io/v2/publish/' + baseUrl + '/api/generate-animation', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          },
+          body: JSON.stringify({
+            imageUrl: uploadUrl,
+            customerEmail: email,
+            customerName,
+            prompt: message || undefined,
+          }),
+        });
+        const qData = await qstashResp.json();
+        console.log(`📬 Animation queued via QStash (messageId: ${qData.messageId})`);
+      } catch (err) {
+        console.error('Failed to queue animation via QStash:', err);
+      }
     }
   }
 

@@ -5,6 +5,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // --- Google Veo via Gemini API ---
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-001';
+const QSTASH_API = 'https://qstash.upstash.io/v2';
+const MAX_POLLS = 24; // 24 polls × 15s delay = 6 minutes max
 
 async function downloadImageAsBase64(imageUrl) {
   const resp = await fetch(imageUrl);
@@ -15,99 +17,34 @@ async function downloadImageAsBase64(imageUrl) {
   return { base64, mimeType: contentType };
 }
 
-async function createVeoTask(imageUrl, prompt) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+async function schedulePollViaQStash(payload) {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'https://envision-legacy.vercel.app';
 
-  // Download the image and convert to base64
-  const { base64, mimeType } = await downloadImageAsBase64(imageUrl);
-
-  const motionPrompt = prompt ||
-    'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
-
-  const resp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:generateVideos?key=${apiKey}`, {
+  const resp = await fetch(`${QSTASH_API}/publish/${baseUrl}/api/generate-animation`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{
-        prompt: motionPrompt,
-        image: {
-          bytesBase64Encoded: base64,
-          mimeType: mimeType,
-        },
-      }],
-      parameters: {
-        aspectRatio: '16:9',
-        sampleCount: 1,
-        durationSeconds: 5,
-        personGeneration: 'allow_adult',
-      },
-    }),
+    headers: {
+      'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Upstash-Delay': '15s',
+      'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+    },
+    body: JSON.stringify(payload),
   });
 
   if (!resp.ok) {
     const err = await resp.text();
-    console.error('Veo API error:', resp.status, err);
-    throw new Error(`Veo API error ${resp.status}: ${err}`);
+    console.error('QStash publish error:', resp.status, err);
+    throw new Error(`QStash error: ${resp.status}`);
   }
 
   const data = await resp.json();
-  console.log('Veo response:', JSON.stringify(data).substring(0, 500));
-
-  // The API returns an operation name for async polling
-  const operationName = data.name || data.operationName;
-  if (!operationName) {
-    // Check if video was returned directly
-    if (data.generatedSamples?.[0]?.video?.uri) {
-      return { type: 'direct', videoUrl: data.generatedSamples[0].video.uri };
-    }
-    throw new Error('No operation name or video returned from Veo');
-  }
-
-  return { type: 'async', operationName };
+  console.log(`   📬 Scheduled poll via QStash (messageId: ${data.messageId})`);
+  return data;
 }
 
-async function pollForResult(operationName) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const maxAttempts = 60; // 5 minutes max (poll every 5s)
-
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 5000));
-
-    const resp = await fetch(`${GEMINI_API}/${operationName}?key=${apiKey}`, {
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!resp.ok) {
-      console.error(`Poll ${i + 1} failed: ${resp.status}`);
-      continue;
-    }
-
-    const data = await resp.json();
-    console.log(`Poll ${i + 1}: done=${data.done}`);
-
-    if (data.done) {
-      // Extract video URL from the response
-      const video = data.response?.generatedSamples?.[0]?.video;
-      if (video?.uri) {
-        return video.uri;
-      }
-      // Alternative response format
-      if (data.result?.generatedSamples?.[0]?.video?.uri) {
-        return data.result.generatedSamples[0].video.uri;
-      }
-      // Check for errors
-      if (data.error) {
-        throw new Error(`Veo generation failed: ${JSON.stringify(data.error)}`);
-      }
-      throw new Error('Veo completed but no video URL found in response');
-    }
-  }
-
-  throw new Error('Video generation timed out after 5 minutes');
-}
-
-// --- Main handler ---
+// --- Main handler (handles both START and POLL) ---
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -116,18 +53,27 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Verify internal secret
+  // Verify auth (from webhook or QStash)
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.INTERNAL_API_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // Parse body
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(chunk);
   }
-  const { imageUrl, customerEmail, customerName, prompt } = JSON.parse(Buffer.concat(chunks).toString());
+  const body = JSON.parse(Buffer.concat(chunks).toString());
 
+  const { imageUrl, customerEmail, customerName, prompt, operationName, pollCount = 0 } = body;
+
+  // --- POLL MODE: check existing Veo operation ---
+  if (operationName) {
+    return handlePoll(req, res, body);
+  }
+
+  // --- START MODE: submit new Veo job ---
   if (!imageUrl || !customerEmail) {
     return res.status(400).json({ error: 'Missing imageUrl or customerEmail' });
   }
@@ -137,56 +83,173 @@ export default async function handler(req, res) {
   console.log(`   Model: ${VEO_MODEL}`);
 
   try {
-    // Step 1: Create animation task
-    const result = await createVeoTask(imageUrl, prompt);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
-    let videoUrl;
-    if (result.type === 'direct') {
-      videoUrl = result.videoUrl;
-    } else {
-      console.log(`   Operation: ${result.operationName}`);
-      // Step 2: Poll for result
-      videoUrl = await pollForResult(result.operationName);
+    // Download image and convert to base64
+    const { base64, mimeType } = await downloadImageAsBase64(imageUrl);
+
+    const motionPrompt = prompt ||
+      'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
+
+    // Submit to Veo
+    const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:generateVideos?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{
+          prompt: motionPrompt,
+          image: {
+            bytesBase64Encoded: base64,
+            mimeType: mimeType,
+          },
+        }],
+        parameters: {
+          aspectRatio: '16:9',
+          sampleCount: 1,
+          durationSeconds: 5,
+          personGeneration: 'allow_adult',
+        },
+      }),
+    });
+
+    if (!veoResp.ok) {
+      const err = await veoResp.text();
+      console.error('Veo API error:', veoResp.status, err);
+      throw new Error(`Veo API error ${veoResp.status}: ${err}`);
     }
 
-    console.log(`   ✅ Animation complete: ${videoUrl}`);
+    const data = await veoResp.json();
+    console.log('Veo response:', JSON.stringify(data).substring(0, 300));
 
-    // Step 3: Send delivery email
-    if (videoUrl) {
-      await resend.emails.send({
-        from: 'Envision Legacy <orders@techhq.ai>',
-        to: customerEmail,
-        subject: 'Your Memory Has Come to Life! ✨',
-        html: buildDeliveryEmail({ customerName, videoUrl }),
-      });
-      console.log(`   📧 Delivery email sent to ${customerEmail}`);
-
-      // Notify owner
-      await resend.emails.send({
-        from: 'Envision Legacy <orders@techhq.ai>',
-        to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
-        subject: `✅ Animation delivered to ${customerName}`,
-        html: `<p>Animation generated and delivered via Veo (${VEO_MODEL}).</p><p><a href="${videoUrl}">View Video</a></p><p>Customer: ${customerName} (${customerEmail})</p>`,
-      });
+    // Check for direct result
+    if (data.generatedSamples?.[0]?.video?.uri) {
+      const videoUrl = data.generatedSamples[0].video.uri;
+      console.log(`   ✅ Video returned directly: ${videoUrl}`);
+      await sendDeliveryEmails(customerEmail, customerName, videoUrl);
+      return res.status(200).json({ success: true, videoUrl });
     }
 
-    return res.status(200).json({ success: true, videoUrl });
+    // Get operation name for async polling
+    const opName = data.name || data.operationName;
+    if (!opName) {
+      throw new Error('No operation name or video returned from Veo');
+    }
+
+    console.log(`   ⏳ Operation started: ${opName}`);
+    console.log(`   Scheduling first poll via QStash...`);
+
+    // Schedule first poll via QStash (15s delay)
+    await schedulePollViaQStash({
+      operationName: opName,
+      customerEmail,
+      customerName,
+      imageUrl,
+      pollCount: 1,
+    });
+
+    return res.status(200).json({ success: true, status: 'processing', operationName: opName });
   } catch (err) {
-    console.error('Animation generation failed:', err);
+    console.error('Animation start failed:', err);
+    await sendFailureNotification(customerName, customerEmail, imageUrl, err.message);
+    return res.status(500).json({ error: 'Animation start failed', details: err.message });
+  }
+}
 
-    // Notify owner of failure
-    try {
-      await resend.emails.send({
-        from: 'Envision Legacy <orders@techhq.ai>',
-        to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
-        subject: `⚠️ Animation failed for ${customerName}`,
-        html: `<p>Veo animation generation failed.</p><p>Customer: ${customerName} (${customerEmail})</p><p>Image: <a href="${imageUrl}">View</a></p><p>Error: ${err.message}</p><p>Please generate manually and deliver.</p>`,
-      });
-    } catch (e) {
-      console.error('Failed to send failure notification:', e);
+// --- POLL handler: check Veo operation status ---
+async function handlePoll(req, res, body) {
+  const { operationName, customerEmail, customerName, imageUrl, pollCount = 0 } = body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  console.log(`🔄 Poll #${pollCount} for ${customerName} — ${operationName}`);
+
+  if (pollCount > MAX_POLLS) {
+    console.error(`   ❌ Max polls exceeded — giving up`);
+    await sendFailureNotification(customerName, customerEmail, imageUrl, 'Animation timed out after 6 minutes');
+    return res.status(200).json({ success: false, error: 'Timed out' });
+  }
+
+  try {
+    const resp = await fetch(`${GEMINI_API}/${operationName}?key=${apiKey}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!resp.ok) {
+      console.error(`   Poll failed: ${resp.status}`);
+      // Schedule retry
+      await schedulePollViaQStash({ ...body, pollCount: pollCount + 1 });
+      return res.status(200).json({ status: 'retrying' });
     }
 
-    return res.status(500).json({ error: 'Animation generation failed', details: err.message });
+    const data = await resp.json();
+    console.log(`   Status: done=${data.done}`);
+
+    if (data.done) {
+      // Extract video URL
+      const videoUrl =
+        data.response?.generatedSamples?.[0]?.video?.uri ||
+        data.result?.generatedSamples?.[0]?.video?.uri;
+
+      if (data.error) {
+        throw new Error(`Veo error: ${JSON.stringify(data.error)}`);
+      }
+
+      if (!videoUrl) {
+        throw new Error('Veo completed but no video URL found');
+      }
+
+      console.log(`   ✅ Animation complete: ${videoUrl}`);
+      await sendDeliveryEmails(customerEmail, customerName, videoUrl);
+      return res.status(200).json({ success: true, videoUrl });
+    }
+
+    // Not done yet — schedule another poll
+    console.log(`   ⏳ Not ready, scheduling poll #${pollCount + 1}...`);
+    await schedulePollViaQStash({ ...body, pollCount: pollCount + 1 });
+    return res.status(200).json({ status: 'polling', pollCount: pollCount + 1 });
+  } catch (err) {
+    console.error(`   Poll error:`, err);
+    await sendFailureNotification(customerName, customerEmail, imageUrl, err.message);
+    return res.status(200).json({ success: false, error: err.message });
+  }
+}
+
+// --- Email helpers ---
+async function sendDeliveryEmails(customerEmail, customerName, videoUrl) {
+  try {
+    await resend.emails.send({
+      from: 'Envision Legacy <orders@techhq.ai>',
+      to: customerEmail,
+      subject: 'Your Memory Has Come to Life! ✨',
+      html: buildDeliveryEmail({ customerName, videoUrl }),
+    });
+    console.log(`   📧 Delivery email sent to ${customerEmail}`);
+  } catch (e) {
+    console.error('Delivery email failed:', e);
+  }
+
+  try {
+    await resend.emails.send({
+      from: 'Envision Legacy <orders@techhq.ai>',
+      to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
+      subject: `✅ Animation delivered to ${customerName}`,
+      html: `<p>Animation generated and delivered via Veo.</p><p><a href="${videoUrl}">View Video</a></p><p>Customer: ${customerName} (${customerEmail})</p>`,
+    });
+  } catch (e) {
+    console.error('Owner notification failed:', e);
+  }
+}
+
+async function sendFailureNotification(customerName, customerEmail, imageUrl, errorMsg) {
+  try {
+    await resend.emails.send({
+      from: 'Envision Legacy <orders@techhq.ai>',
+      to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
+      subject: `⚠️ Animation failed for ${customerName}`,
+      html: `<p>Veo animation failed.</p><p>Customer: ${customerName} (${customerEmail})</p><p>Image: <a href="${imageUrl}">View</a></p><p>Error: ${errorMsg}</p><p>Please generate manually.</p>`,
+    });
+  } catch (e) {
+    console.error('Failure notification failed:', e);
   }
 }
 
