@@ -90,24 +90,26 @@ export default async function handler(req, res) {
     const motionPrompt = prompt ||
       'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
 
-    // Submit to Veo via predictLongRunning
-    const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning?key=${apiKey}`, {
+    // Submit to Veo via predictLongRunning (official Gemini API format)
+    const veoResp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         instances: [{
           prompt: motionPrompt,
-          image: {
-            bytesBase64Encoded: base64,
-            mimeType: mimeType,
-          },
+          referenceImages: [{
+            image: {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64,
+              },
+            },
+            referenceType: 'asset',
+          }],
         }],
-        parameters: {
-          aspectRatio: '16:9',
-          sampleCount: 1,
-          durationSeconds: 5,
-          personGeneration: 'allow_adult',
-        },
       }),
     });
 
@@ -168,8 +170,11 @@ async function handlePoll(req, res, body) {
   }
 
   try {
-    const resp = await fetch(`${GEMINI_API}/${operationName}?key=${apiKey}`, {
-      headers: { 'Content-Type': 'application/json' },
+    const resp = await fetch(`${GEMINI_API}/${operationName}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
     });
 
     if (!resp.ok) {
@@ -185,8 +190,8 @@ async function handlePoll(req, res, body) {
     if (data.done) {
       // Extract video URL
       const videoUrl =
-        data.response?.generatedSamples?.[0]?.video?.uri ||
-        data.result?.generatedSamples?.[0]?.video?.uri;
+        data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
+        data.response?.generatedSamples?.[0]?.video?.uri;
 
       if (data.error) {
         throw new Error(`Veo error: ${JSON.stringify(data.error)}`);
