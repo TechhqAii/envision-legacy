@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Google Veo via Gemini API ---
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
-const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-generate-preview';
+const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-preview';
 const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const MAX_POLLS = 24; // 24 polls × 15s delay = 6 minutes max
 
@@ -102,11 +102,13 @@ export default async function handler(req, res) {
       Buffer.from(`\r\n--${boundary}--\r\n`),
     ]);
 
-    const uploadResp = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
+    const uploadResp = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files`, {
       method: 'POST',
       headers: {
         'Content-Type': `multipart/related; boundary=${boundary}`,
         'Content-Length': multipartBody.length.toString(),
+        'X-Goog-Upload-Protocol': 'multipart',
+        'x-goog-api-key': apiKey,
       },
       body: multipartBody,
     });
