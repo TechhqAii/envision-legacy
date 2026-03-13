@@ -15,44 +15,35 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Collect request body as Buffer
     const chunks = [];
     for await (const chunk of req) {
       chunks.push(chunk);
     }
+    const body = Buffer.concat(chunks);
 
-    const boundary = req.headers['content-type']?.split('boundary=')[1];
-    if (!boundary) {
+    // Parse boundary from Content-Type
+    const contentType = req.headers['content-type'] || '';
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
+    if (!boundaryMatch) {
       return res.status(400).json({ error: 'No multipart boundary found' });
     }
+    const boundary = boundaryMatch[1] || boundaryMatch[2];
+    const boundaryBuf = Buffer.from(`--${boundary}`);
 
-    const body = Buffer.concat(chunks);
-    const bodyStr = body.toString('latin1');
+    // Find the file part
+    const { filename, fileBuffer } = extractFile(body, boundaryBuf);
 
-    // Simple multipart parser to extract file
-    const parts = bodyStr.split(`--${boundary}`).filter(p => p.includes('filename='));
-
-    if (parts.length === 0) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    if (!filename || !fileBuffer || fileBuffer.length === 0) {
+      return res.status(400).json({ error: 'No file found in upload' });
     }
 
-    const part = parts[0];
-    const filenameMatch = part.match(/filename="([^"]+)"/);
-    const filename = filenameMatch ? filenameMatch[1] : `upload-${Date.now()}`;
+    // Check file size (25MB max)
+    if (fileBuffer.length > 25 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File too large. Maximum 25MB.' });
+    }
 
-    // Find the start of file data (after double CRLF)
-    const headerEnd = part.indexOf('\r\n\r\n') + 4;
-    const dataEnd = part.lastIndexOf('\r\n');
-    const fileData = body.subarray(
-      bodyStr.indexOf(part.substring(headerEnd, headerEnd + 20)) + body.indexOf(Buffer.from(part.substring(headerEnd, headerEnd + 20), 'latin1')),
-      body.length
-    );
-
-    // Rebuild file buffer from the raw body
-    const partStart = body.indexOf(Buffer.from(`filename="${filename}"`, 'latin1'));
-    const dataStart = body.indexOf(Buffer.from('\r\n\r\n', 'latin1'), partStart) + 4;
-    const nextBoundary = body.indexOf(Buffer.from(`--${boundary}`, 'latin1'), dataStart);
-    const fileBuffer = body.subarray(dataStart, nextBoundary - 2); // -2 for trailing \r\n
-
+    // Upload to Vercel Blob
     const timestamp = Date.now();
     const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
     const blobPath = `uploads/${timestamp}-${safeName}`;
@@ -62,6 +53,8 @@ export default async function handler(req, res) {
       contentType: getContentType(filename),
     });
 
+    console.log(`✅ Uploaded: ${safeName} (${fileBuffer.length} bytes) → ${blob.url}`);
+
     return res.status(200).json({
       url: blob.url,
       filename: safeName,
@@ -69,8 +62,46 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Upload error:', err);
-    return res.status(500).json({ error: 'Upload failed' });
+    return res.status(500).json({ error: 'Upload failed', details: err.message });
   }
+}
+
+function extractFile(body, boundaryBuf) {
+  // Find all boundary positions
+  const positions = [];
+  let pos = 0;
+  while (pos < body.length) {
+    const idx = body.indexOf(boundaryBuf, pos);
+    if (idx === -1) break;
+    positions.push(idx);
+    pos = idx + boundaryBuf.length;
+  }
+
+  // Each part is between consecutive boundaries
+  for (let i = 0; i < positions.length - 1; i++) {
+    const partStart = positions[i] + boundaryBuf.length;
+    const partEnd = positions[i + 1];
+    const partData = body.subarray(partStart, partEnd);
+
+    // Find the double CRLF that separates headers from body
+    const headerEndMarker = Buffer.from('\r\n\r\n');
+    const headerEndIdx = partData.indexOf(headerEndMarker);
+    if (headerEndIdx === -1) continue;
+
+    const headerStr = partData.subarray(0, headerEndIdx).toString('utf-8');
+
+    // Check if this part has a filename
+    const filenameMatch = headerStr.match(/filename="([^"]+)"/);
+    if (!filenameMatch) continue;
+
+    const filename = filenameMatch[1];
+    // File data starts after headers + double CRLF, ends before trailing CRLF
+    const fileData = partData.subarray(headerEndIdx + 4, partData.length - 2);
+
+    return { filename, fileBuffer: fileData };
+  }
+
+  return { filename: null, fileBuffer: null };
 }
 
 function getContentType(filename) {
@@ -81,10 +112,12 @@ function getContentType(filename) {
     png: 'image/png',
     webp: 'image/webp',
     gif: 'image/gif',
+    heic: 'image/heic',
     mp3: 'audio/mpeg',
     wav: 'audio/wav',
     m4a: 'audio/mp4',
     mp4: 'video/mp4',
+    mov: 'video/quicktime',
   };
   return types[ext] || 'application/octet-stream';
 }

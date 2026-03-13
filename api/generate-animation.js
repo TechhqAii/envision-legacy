@@ -2,77 +2,109 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// --- Provider: Runway ML Gen-4 Turbo ---
-// Swap this section to use Kling, Luma, or any other provider.
-// Just replace createAnimationTask() and pollForResult().
+// --- Google Veo via Gemini API ---
+const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
+const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-001';
 
-const RUNWAY_API = 'https://api.dev.runwayml.com/v1';
-
-async function createAnimationTask(imageUrl, prompt) {
-  const provider = process.env.ANIMATION_PROVIDER || 'runway';
-
-  if (provider === 'runway') {
-    return createRunwayTask(imageUrl, prompt);
-  }
-  // Future: add kling, luma, etc.
-  throw new Error(`Unknown animation provider: ${provider}`);
+async function downloadImageAsBase64(imageUrl) {
+  const resp = await fetch(imageUrl);
+  if (!resp.ok) throw new Error(`Failed to download image: ${resp.status}`);
+  const buffer = await resp.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+  const contentType = resp.headers.get('content-type') || 'image/jpeg';
+  return { base64, mimeType: contentType };
 }
 
-async function createRunwayTask(imageUrl, prompt) {
-  const resp = await fetch(`${RUNWAY_API}/image_to_video`, {
+async function createVeoTask(imageUrl, prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+
+  // Download the image and convert to base64
+  const { base64, mimeType } = await downloadImageAsBase64(imageUrl);
+
+  const motionPrompt = prompt ||
+    'Gentle, subtle lifelike motion. Soft breathing, slight natural movement, warm and emotional atmosphere. Preserve the original composition.';
+
+  const resp = await fetch(`${GEMINI_API}/models/${VEO_MODEL}:generateVideos?key=${apiKey}`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.RUNWAY_API_KEY}`,
-      'Content-Type': 'application/json',
-      'X-Runway-Version': '2024-11-06',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gen4_turbo',
-      promptImage: imageUrl,
-      promptText: prompt || 'Gentle subtle motion, bring the photo to life with natural movement, soft breathing, blinking eyes, slight head turn',
-      duration: 5,
-      ratio: '16:9',
+      instances: [{
+        prompt: motionPrompt,
+        image: {
+          bytesBase64Encoded: base64,
+          mimeType: mimeType,
+        },
+      }],
+      parameters: {
+        aspectRatio: '16:9',
+        sampleCount: 1,
+        durationSeconds: 5,
+        personGeneration: 'allow_adult',
+      },
     }),
   });
 
   if (!resp.ok) {
     const err = await resp.text();
-    console.error('Runway API error:', resp.status, err);
-    throw new Error(`Runway API error: ${resp.status}`);
+    console.error('Veo API error:', resp.status, err);
+    throw new Error(`Veo API error ${resp.status}: ${err}`);
   }
 
   const data = await resp.json();
-  return data.id; // task ID for polling
+  console.log('Veo response:', JSON.stringify(data).substring(0, 500));
+
+  // The API returns an operation name for async polling
+  const operationName = data.name || data.operationName;
+  if (!operationName) {
+    // Check if video was returned directly
+    if (data.generatedSamples?.[0]?.video?.uri) {
+      return { type: 'direct', videoUrl: data.generatedSamples[0].video.uri };
+    }
+    throw new Error('No operation name or video returned from Veo');
+  }
+
+  return { type: 'async', operationName };
 }
 
-async function pollForResult(taskId) {
+async function pollForResult(operationName) {
+  const apiKey = process.env.GEMINI_API_KEY;
   const maxAttempts = 60; // 5 minutes max (poll every 5s)
 
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 5000)); // wait 5s
+    await new Promise(r => setTimeout(r, 5000));
 
-    const resp = await fetch(`${RUNWAY_API}/tasks/${taskId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.RUNWAY_API_KEY}`,
-        'X-Runway-Version': '2024-11-06',
-      },
+    const resp = await fetch(`${GEMINI_API}/${operationName}?key=${apiKey}`, {
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    if (!resp.ok) continue;
+    if (!resp.ok) {
+      console.error(`Poll ${i + 1} failed: ${resp.status}`);
+      continue;
+    }
 
     const data = await resp.json();
-    console.log(`Poll ${i + 1}: status=${data.status}`);
+    console.log(`Poll ${i + 1}: done=${data.done}`);
 
-    if (data.status === 'SUCCEEDED') {
-      return data.output?.[0] || data.artifacts?.[0]?.url || null;
+    if (data.done) {
+      // Extract video URL from the response
+      const video = data.response?.generatedSamples?.[0]?.video;
+      if (video?.uri) {
+        return video.uri;
+      }
+      // Alternative response format
+      if (data.result?.generatedSamples?.[0]?.video?.uri) {
+        return data.result.generatedSamples[0].video.uri;
+      }
+      // Check for errors
+      if (data.error) {
+        throw new Error(`Veo generation failed: ${JSON.stringify(data.error)}`);
+      }
+      throw new Error('Veo completed but no video URL found in response');
     }
-    if (data.status === 'FAILED') {
-      throw new Error(`Animation generation failed: ${data.failure || 'unknown error'}`);
-    }
-    // status === 'RUNNING' or 'PENDING' → keep polling
   }
 
-  throw new Error('Animation generation timed out after 5 minutes');
+  throw new Error('Video generation timed out after 5 minutes');
 }
 
 // --- Main handler ---
@@ -84,28 +116,39 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Verify internal secret (only webhook should call this)
+  // Verify internal secret
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.INTERNAL_API_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { imageUrl, customerEmail, customerName, prompt } = req.body;
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
+  }
+  const { imageUrl, customerEmail, customerName, prompt } = JSON.parse(Buffer.concat(chunks).toString());
 
   if (!imageUrl || !customerEmail) {
     return res.status(400).json({ error: 'Missing imageUrl or customerEmail' });
   }
 
-  console.log(`🎬 Starting animation for ${customerName} (${customerEmail})`);
+  console.log(`🎬 Starting Veo animation for ${customerName} (${customerEmail})`);
   console.log(`   Image: ${imageUrl}`);
+  console.log(`   Model: ${VEO_MODEL}`);
 
   try {
     // Step 1: Create animation task
-    const taskId = await createAnimationTask(imageUrl, prompt);
-    console.log(`   Task created: ${taskId}`);
+    const result = await createVeoTask(imageUrl, prompt);
 
-    // Step 2: Poll for result
-    const videoUrl = await pollForResult(taskId);
+    let videoUrl;
+    if (result.type === 'direct') {
+      videoUrl = result.videoUrl;
+    } else {
+      console.log(`   Operation: ${result.operationName}`);
+      // Step 2: Poll for result
+      videoUrl = await pollForResult(result.operationName);
+    }
+
     console.log(`   ✅ Animation complete: ${videoUrl}`);
 
     // Step 3: Send delivery email
@@ -123,7 +166,7 @@ export default async function handler(req, res) {
         from: 'Envision Legacy <orders@envisionlegacy.com>',
         to: process.env.OWNER_EMAIL || 'orders@envisionlegacy.com',
         subject: `✅ Animation delivered to ${customerName}`,
-        html: `<p>Animation has been generated and delivered.</p><p><a href="${videoUrl}">View Video</a></p><p>Customer: ${customerName} (${customerEmail})</p>`,
+        html: `<p>Animation generated and delivered via Veo (${VEO_MODEL}).</p><p><a href="${videoUrl}">View Video</a></p><p>Customer: ${customerName} (${customerEmail})</p>`,
       });
     }
 
@@ -131,13 +174,13 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('Animation generation failed:', err);
 
-    // Send failure notification to owner
+    // Notify owner of failure
     try {
       await resend.emails.send({
         from: 'Envision Legacy <orders@envisionlegacy.com>',
         to: process.env.OWNER_EMAIL || 'orders@envisionlegacy.com',
         subject: `⚠️ Animation failed for ${customerName}`,
-        html: `<p>Animation generation failed.</p><p>Customer: ${customerName} (${customerEmail})</p><p>Image: <a href="${imageUrl}">View</a></p><p>Error: ${err.message}</p><p>Please generate manually and deliver.</p>`,
+        html: `<p>Veo animation generation failed.</p><p>Customer: ${customerName} (${customerEmail})</p><p>Image: <a href="${imageUrl}">View</a></p><p>Error: ${err.message}</p><p>Please generate manually and deliver.</p>`,
       });
     } catch (e) {
       console.error('Failed to send failure notification:', e);
@@ -158,7 +201,7 @@ function buildDeliveryEmail({ customerName, videoUrl }) {
       <div style="background: white; padding: 32px; border-radius: 8px; border: 1px solid #e8e0d4;">
         <h2 style="color: #1a1a1a; margin-top: 0;">Your Memory is Alive, ${name}! ✨</h2>
         <p style="color: #555; line-height: 1.7;">
-          We've brought your photo to life. Click the button below to download your animated memory.
+          We have brought your photo to life with AI. Click below to download your animated memory.
         </p>
         <div style="text-align: center; margin: 28px 0;">
           <a href="${videoUrl}" style="display: inline-block; background: #c4793a; color: white; padding: 14px 32px; border-radius: 50px; text-decoration: none; font-weight: 600; letter-spacing: 0.5px;">
@@ -169,7 +212,7 @@ function buildDeliveryEmail({ customerName, videoUrl }) {
           <p style="margin: 0; color: #555; font-size: 14px;">
             <strong>Tips:</strong><br>
             • Right-click the video to save it to your device<br>
-            • Share it with family — they'll love it<br>
+            • Share it with family — they will love it<br>
             • This link expires in 30 days
           </p>
         </div>
