@@ -70,7 +70,12 @@ export default async function handler(req, res) {
         : 'https://envision-legacy.vercel.app';
 
       try {
-        const qstashResp = await fetch('https://qstash.upstash.io/v2/publish/' + baseUrl + '/api/generate-animation', {
+        const targetUrl = baseUrl + '/api/generate-animation';
+        console.log(`📬 Publishing to QStash: ${targetUrl}`);
+        console.log(`   QSTASH_TOKEN set: ${!!process.env.QSTASH_TOKEN}`);
+        console.log(`   INTERNAL_API_SECRET set: ${!!process.env.INTERNAL_API_SECRET}`);
+
+        const qstashResp = await fetch('https://qstash.upstash.io/v2/publish/' + targetUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
@@ -84,8 +89,14 @@ export default async function handler(req, res) {
             prompt: message || undefined,
           }),
         });
-        const qData = await qstashResp.json();
-        console.log(`📬 Animation queued via QStash (messageId: ${qData.messageId})`);
+        const qText = await qstashResp.text();
+        console.log(`   QStash response (${qstashResp.status}): ${qText}`);
+        if (!qstashResp.ok) {
+          console.error(`   ❌ QStash publish failed: ${qstashResp.status} ${qText}`);
+        } else {
+          const qData = JSON.parse(qText);
+          console.log(`   ✅ Animation queued (messageId: ${qData.messageId})`);
+        }
       } catch (err) {
         console.error('Failed to queue animation via QStash:', err);
       }
