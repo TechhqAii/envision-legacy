@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     // Send confirmation email
     try {
       await resend.emails.send({
-        from: 'Envision Legacy <orders@envisionlegacy.com>',
+        from: 'Envision Legacy <orders@techhq.ai>',
         to: email,
         subject: `Your ${getServiceName(service)} Order — We're On It!`,
         html: buildConfirmationEmail({ customerName, service, uploadUrl, message }),
@@ -54,8 +54,8 @@ export default async function handler(req, res) {
     // Send notification to business owner
     try {
       await resend.emails.send({
-        from: 'Envision Legacy <orders@envisionlegacy.com>',
-        to: process.env.OWNER_EMAIL || 'orders@envisionlegacy.com',
+        from: 'Envision Legacy <orders@techhq.ai>',
+        to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
         subject: `🎉 New Order: ${getServiceName(service)} from ${customerName}`,
         html: buildOwnerNotification({ customerName, email, service, uploadUrl, message, amount: session.amount_total }),
       });

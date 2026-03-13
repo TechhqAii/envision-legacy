@@ -154,7 +154,7 @@ export default async function handler(req, res) {
     // Step 3: Send delivery email
     if (videoUrl) {
       await resend.emails.send({
-        from: 'Envision Legacy <orders@envisionlegacy.com>',
+        from: 'Envision Legacy <orders@techhq.ai>',
         to: customerEmail,
         subject: 'Your Memory Has Come to Life! ✨',
         html: buildDeliveryEmail({ customerName, videoUrl }),
@@ -163,8 +163,8 @@ export default async function handler(req, res) {
 
       // Notify owner
       await resend.emails.send({
-        from: 'Envision Legacy <orders@envisionlegacy.com>',
-        to: process.env.OWNER_EMAIL || 'orders@envisionlegacy.com',
+        from: 'Envision Legacy <orders@techhq.ai>',
+        to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
         subject: `✅ Animation delivered to ${customerName}`,
         html: `<p>Animation generated and delivered via Veo (${VEO_MODEL}).</p><p><a href="${videoUrl}">View Video</a></p><p>Customer: ${customerName} (${customerEmail})</p>`,
       });
@@ -177,8 +177,8 @@ export default async function handler(req, res) {
     // Notify owner of failure
     try {
       await resend.emails.send({
-        from: 'Envision Legacy <orders@envisionlegacy.com>',
-        to: process.env.OWNER_EMAIL || 'orders@envisionlegacy.com',
+        from: 'Envision Legacy <orders@techhq.ai>',
+        to: process.env.OWNER_EMAIL || 'orders@techhq.ai',
         subject: `⚠️ Animation failed for ${customerName}`,
         html: `<p>Veo animation generation failed.</p><p>Customer: ${customerName} (${customerEmail})</p><p>Image: <a href="${imageUrl}">View</a></p><p>Error: ${err.message}</p><p>Please generate manually and deliver.</p>`,
       });
