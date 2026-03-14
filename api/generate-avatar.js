@@ -241,14 +241,34 @@ async function handlePollVideo(res, body) {
   }
 }
 
+// --- Normalize MIME types for HeyGen's strict requirements ---
+function normalizeContentType(contentType) {
+  const map = {
+    'audio/wav': 'audio/x-wav',
+    'audio/wave': 'audio/x-wav',
+    'audio/mpeg': 'audio/mpeg',
+    'audio/mp3': 'audio/mpeg',
+    'image/jpeg': 'image/jpeg',
+    'image/jpg': 'image/jpeg',
+    'image/png': 'image/png',
+    'image/webp': 'image/webp',
+  };
+  // Strip charset or extra params
+  const base = contentType.split(';')[0].trim().toLowerCase();
+  return map[base] || base;
+}
+
 // --- Upload asset to HeyGen ---
 async function uploadAssetToHeyGen(apiKey, buffer, filename, contentType) {
   // HeyGen expects raw binary data with Content-Type set to the file MIME type
+  const normalizedType = normalizeContentType(contentType);
+  console.log(`   Content-Type: ${contentType} → ${normalizedType}`);
+
   const resp = await fetch(`${HEYGEN_UPLOAD}/v1/asset`, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
-      'Content-Type': contentType,
+      'Content-Type': normalizedType,
     },
     body: buffer,
   });
