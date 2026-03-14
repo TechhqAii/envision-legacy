@@ -562,14 +562,14 @@
     }
 
     function lockStep(step) {
-        if (step >= 2) {
+        if (step === 2) {
             document.getElementById('message-step').style.opacity = '0.5';
             document.getElementById('message-step').style.pointerEvents = 'none';
             document.getElementById('step1').classList.remove('done');
             document.getElementById('step2').classList.remove('active');
             lockStep(3);
         }
-        if (step >= 3) {
+        if (step === 3) {
             document.getElementById('checkout-step').style.opacity = '0.5';
             document.getElementById('checkout-step').style.pointerEvents = 'none';
             document.getElementById('step2').classList.remove('done');
