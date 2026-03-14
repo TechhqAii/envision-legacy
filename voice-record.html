@@ -219,6 +219,30 @@
             float: right; font-size: 12px; color: var(--text-muted);
         }
 
+        /* Speaking style buttons */
+        .style-picker {
+            display: flex; gap: 10px; margin-bottom: 20px;
+        }
+        .style-btn {
+            flex: 1; padding: 14px 12px; border: 2px solid var(--card-border);
+            border-radius: 12px; background: white; cursor: pointer;
+            text-align: center; transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .style-btn:hover { border-color: var(--text-muted); }
+        .style-btn.active {
+            border-color: var(--accent); background: var(--accent-glow);
+        }
+        .style-btn .style-icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .style-btn .style-label {
+            font-size: 13px; font-weight: 600; color: var(--text-primary);
+        }
+        .style-btn .style-desc {
+            font-size: 11px; color: var(--text-muted); margin-top: 2px;
+        }
+        @media (max-width: 600px) {
+            .style-picker { flex-direction: column; }
+        }
+
         /* CTA */
         .cta-btn {
             display: block; width: 100%; padding: 18px;
@@ -329,8 +353,28 @@
         <div id="message-step" class="section" style="opacity: 0.5; pointer-events: none;">
             <h2 class="section-title">Step 2 — Your Message</h2>
             <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
-                Write the words you'd like to hear spoken in this voice.
+                Choose a speaking style and write the words you'd like to hear.
             </p>
+
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block;">Speaking Style</label>
+            <div class="style-picker">
+                <button class="style-btn" data-style="gentle" onclick="selectStyle('gentle')">
+                    <div class="style-icon">🕊️</div>
+                    <div class="style-label">Gentle & Slow</div>
+                    <div class="style-desc">Soft, comforting pace</div>
+                </button>
+                <button class="style-btn active" data-style="natural" onclick="selectStyle('natural')">
+                    <div class="style-icon">💬</div>
+                    <div class="style-label">Natural</div>
+                    <div class="style-desc">Just like they spoke</div>
+                </button>
+                <button class="style-btn" data-style="upbeat" onclick="selectStyle('upbeat')">
+                    <div class="style-icon">⚡</div>
+                    <div class="style-label">Upbeat & Lively</div>
+                    <div class="style-desc">Energetic, bright tone</div>
+                </button>
+            </div>
+
             <div class="message-area">
                 <textarea id="messageText" placeholder="I'm so proud of you. I want you to know that I'm always with you, no matter what..." maxlength="500" oninput="updateCharCount()"></textarea>
                 <div class="message-hint">
@@ -376,7 +420,15 @@
     let elapsed = 0;
     let analyser = null;
     let animationId = null;
+    let selectedStyle = 'natural';
     const MAX_DURATION = 60; // 60 seconds max for high-quality clone
+
+    // --- Speaking Style ---
+    function selectStyle(style) {
+        selectedStyle = style;
+        document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.style-btn[data-style="${style}"]`).classList.add('active');
+    }
 
     // --- Tab switching ---
     function switchTab(tab) {
@@ -649,7 +701,7 @@
                     customerName: name,
                     customerEmail: email,
                     uploadUrl: uploadData.url,
-                    message: message,
+                    message: `[style:${selectedStyle}] ${message}`,
                 }),
             });
 

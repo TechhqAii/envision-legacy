@@ -157,11 +157,30 @@ async function handleClone(res, body) {
 }
 
 // --- STEP 2: Synthesize speech with cloned voice ---
+
+// Speaking style presets (mapped from customer-facing buttons)
+const STYLE_PRESETS = {
+  gentle:  { speed: 0.85, temperature: 0.7, top_p: 0.85 },
+  natural: { speed: 1.0,  temperature: 0.9, top_p: 0.9  },
+  upbeat:  { speed: 1.15, temperature: 1.0, top_p: 0.95 },
+};
+
+function parseStyleFromMessage(message) {
+  const match = message.match(/^\[style:(\w+)\]\s*/);
+  if (match) {
+    const style = match[1];
+    const cleanMessage = message.replace(match[0], '');
+    return { style: STYLE_PRESETS[style] || STYLE_PRESETS.natural, text: cleanMessage };
+  }
+  return { style: STYLE_PRESETS.natural, text: message };
+}
+
 async function handleSynthesize(res, body) {
   const { modelId, voiceMessage, customerEmail, customerName, pollCount = 0 } = body;
   const apiKey = process.env.FISH_AUDIO_API_KEY;
 
-  console.log(`🔊 Voice Synth #${pollCount} — ${customerName} (model: ${modelId})`);
+  const { style, text } = parseStyleFromMessage(voiceMessage);
+  console.log(`🔊 Voice Synth #${pollCount} — ${customerName} (model: ${modelId}, speed: ${style.speed})`);
 
   if (pollCount > MAX_POLLS) {
     await sendFailureNotification(customerName, customerEmail, 'Voice synthesis timed out');
@@ -176,18 +195,19 @@ async function handleSynthesize(res, body) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        text: voiceMessage,
+        text: text,
         reference_id: modelId,
-        // --- Quality tuning ---
-        format: 'wav',              // Lossless audio (vs compressed MP3)
-        mp3_bitrate: 192,           // Fallback if WAV not supported
-        sample_rate: 44100,         // CD-quality 44.1kHz
-        latency: 'normal',          // Best quality mode
-        top_p: 0.9,                 // Natural variation (S1 recommended)
-        temperature: 0.9,           // Expressive, emotional output
-        repetition_penalty: 1.2,    // Prevents robotic repetition
-        chunk_length: 200,          // Better phrasing for emotional content
-        normalize: true,            // Even volume levels
+        // --- Quality tuning (style-aware) ---
+        format: 'wav',
+        mp3_bitrate: 192,
+        sample_rate: 44100,
+        latency: 'normal',
+        top_p: style.top_p,
+        temperature: style.temperature,
+        repetition_penalty: 1.2,
+        chunk_length: 200,
+        normalize: true,
+        prosody: { speed: style.speed, volume: 0 },
       }),
     });
 
