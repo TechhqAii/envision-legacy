@@ -343,7 +343,7 @@
                 <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
             <p>Drag & drop photos here, or <span class="browse">browse files</span></p>
-            <p style="font-size: 12px; margin-top: 6px;">JPG, PNG, WebP — up to 10MB each</p>
+            <p style="font-size: 12px; margin-top: 6px;">JPG, PNG, WebP — any size, auto-optimized</p>
         </div>
         <input type="file" id="file-input" class="file-input" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
         <p class="photo-count" id="photo-count">0 / 10 photos added</p>
@@ -382,7 +382,7 @@
     <script>
     (function() {
         const MAX_PHOTOS = 10;
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB accept, compress later
         const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
         const uploadZone = document.getElementById('upload-zone');
@@ -415,7 +415,55 @@
             fileInput.value = '';
         });
 
-        function handleFiles(fileList) {
+        const MAX_UPLOAD_SIZE = 3.5 * 1024 * 1024; // 3.5MB target after compression
+
+        // --- Image compression via Canvas ---
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                // If already small enough, use as-is
+                if (file.size <= MAX_UPLOAD_SIZE) {
+                    return resolve(file);
+                }
+
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+
+                    // Scale down large images
+                    const MAX_DIM = 2000;
+                    if (width > MAX_DIM || height > MAX_DIM) {
+                        const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Try different quality levels
+                    const tryQuality = (q) => {
+                        canvas.toBlob((blob) => {
+                            if (blob.size <= MAX_UPLOAD_SIZE || q <= 0.4) {
+                                const compressed = new File([blob], file.name, { type: 'image/jpeg' });
+                                console.log(`Compressed ${file.name}: ${(file.size/1024/1024).toFixed(1)}MB → ${(blob.size/1024/1024).toFixed(1)}MB`);
+                                resolve(compressed);
+                            } else {
+                                tryQuality(q - 0.1);
+                            }
+                        }, 'image/jpeg', q);
+                    };
+
+                    tryQuality(0.85);
+                };
+                img.onerror = () => resolve(file); // fallback to original
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        async function handleFiles(fileList) {
             const files = Array.from(fileList);
             for (const file of files) {
                 if (photos.length >= MAX_PHOTOS) {
@@ -426,12 +474,10 @@
                     alert(`${file.name} is not a supported format. Use JPG, PNG, or WebP.`);
                     continue;
                 }
-                if (file.size > MAX_FILE_SIZE) {
-                    alert(`${file.name} is too large. Max 10MB per photo.`);
-                    continue;
-                }
-                const preview = URL.createObjectURL(file);
-                photos.push({ file, preview, caption: '' });
+                // Compress before adding
+                const compressed = await compressImage(file);
+                const preview = URL.createObjectURL(compressed);
+                photos.push({ file: compressed, preview, caption: '' });
             }
             renderGrid();
             updateState();
