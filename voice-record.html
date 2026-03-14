@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Record your loved one's voice for AI cloning — Envision Legacy">
+    <title>Voice Recording — Envision Legacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ede8e1;
+            --card-bg: #f8f4ee;
+            --card-border: #e8e0d4;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555;
+            --text-muted: #8b775a;
+            --accent: #c4793a;
+            --accent-light: #d4915a;
+            --accent-glow: rgba(196, 121, 58, 0.15);
+            --red: #e74c3c;
+            --green: #27ae60;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(237, 232, 225, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 16px 32px;
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--text-primary);
+        }
+        .nav-logo-text {
+            font-family: 'Anton', sans-serif;
+            font-size: 18px; letter-spacing: 3px; text-transform: uppercase;
+        }
+        .nav-tagline {
+            font-family: 'Playfair Display', serif;
+            font-size: 11px; font-style: italic; color: var(--text-muted);
+        }
+        .nav-back {
+            color: var(--accent); text-decoration: none; font-weight: 500;
+            display: flex; align-items: center; gap: 6px; font-size: 14px;
+        }
+        .nav-back:hover { text-decoration: underline; }
+
+        /* Main */
+        .container {
+            max-width: 720px; margin: 0 auto; padding: 40px 24px 80px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem; font-weight: 700; margin-bottom: 8px;
+        }
+        .subtitle {
+            color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 32px;
+        }
+
+        /* Steps indicator */
+        .steps {
+            display: flex; gap: 4px; margin-bottom: 40px;
+        }
+        .step-bar {
+            flex: 1; height: 4px; border-radius: 2px; background: var(--card-border);
+            transition: background 0.3s;
+        }
+        .step-bar.active { background: var(--accent); }
+        .step-bar.done { background: var(--green); }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 8px; margin-bottom: 28px;
+        }
+        .tab-btn {
+            flex: 1; padding: 12px 16px; border: 2px solid var(--card-border);
+            border-radius: 10px; background: white; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+            text-align: center; transition: all 0.2s; color: var(--text-secondary);
+        }
+        .tab-btn.active {
+            border-color: var(--accent); background: var(--accent-glow);
+            color: var(--accent);
+        }
+        .tab-btn:hover:not(.active) { border-color: var(--text-muted); }
+
+        /* Sections */
+        .section {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 32px; margin-bottom: 24px;
+        }
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem; margin-bottom: 16px;
+        }
+
+        /* Script box */
+        .script-box {
+            background: white; border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 24px; margin-bottom: 24px;
+            font-family: 'Playfair Display', serif; font-size: 1.1rem;
+            line-height: 1.8; color: var(--text-primary); position: relative;
+        }
+        .script-label {
+            position: absolute; top: -10px; left: 16px;
+            background: var(--card-bg); padding: 0 8px;
+            font-family: 'Inter', sans-serif; font-size: 11px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--accent);
+        }
+
+        /* Record button */
+        .record-area {
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        .record-btn {
+            width: 88px; height: 88px; border-radius: 50%;
+            border: 4px solid var(--card-border); background: white;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; position: relative;
+        }
+        .record-btn::after {
+            content: ''; width: 36px; height: 36px; border-radius: 50%;
+            background: var(--red); transition: all 0.2s;
+        }
+        .record-btn:hover { border-color: var(--red); transform: scale(1.05); }
+        .record-btn.recording {
+            border-color: var(--red); animation: pulse-ring 1.5s ease-in-out infinite;
+        }
+        .record-btn.recording::after {
+            width: 24px; height: 24px; border-radius: 4px;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); }
+        }
+        .record-label {
+            font-size: 14px; font-weight: 600; color: var(--text-secondary);
+        }
+
+        /* Timer */
+        .timer {
+            font-family: 'Inter', sans-serif; font-size: 2rem; font-weight: 300;
+            color: var(--text-muted); letter-spacing: 2px;
+        }
+        .timer.warning { color: var(--red); }
+
+        /* Waveform */
+        .waveform-container {
+            width: 100%; height: 64px; background: white;
+            border: 1px solid var(--card-border); border-radius: 10px;
+            overflow: hidden; margin-top: 8px;
+        }
+        .waveform-container canvas {
+            width: 100%; height: 100%;
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed var(--card-border); border-radius: 12px;
+            padding: 40px; text-align: center; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent); background: var(--accent-glow);
+        }
+        .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .upload-text { color: var(--text-secondary); font-size: 14px; }
+        .upload-text strong { color: var(--accent); }
+        .upload-formats { color: var(--text-muted); font-size: 12px; margin-top: 8px; }
+        .upload-zone input[type="file"] { display: none; }
+
+        /* Audio preview */
+        .audio-preview {
+            display: none; align-items: center; gap: 12px;
+            background: white; border: 1px solid var(--card-border);
+            border-radius: 10px; padding: 16px; margin-top: 16px;
+        }
+        .audio-preview.visible { display: flex; }
+        .audio-preview audio { flex: 1; height: 40px; }
+        .btn-remove {
+            background: none; border: none; color: var(--red);
+            cursor: pointer; font-size: 18px; padding: 4px;
+        }
+
+        /* Message */
+        .message-area textarea {
+            width: 100%; min-height: 120px; padding: 16px;
+            border: 1px solid var(--card-border); border-radius: 10px;
+            font-family: 'Playfair Display', serif; font-size: 1.05rem;
+            line-height: 1.7; resize: vertical; background: white;
+            color: var(--text-primary);
+        }
+        .message-area textarea:focus {
+            outline: none; border-color: var(--accent);
+        }
+        .message-hint {
+            font-size: 13px; color: var(--text-muted); margin-top: 8px;
+        }
+        .char-count {
+            float: right; font-size: 12px; color: var(--text-muted);
+        }
+
+        /* CTA */
+        .cta-btn {
+            display: block; width: 100%; padding: 18px;
+            background: var(--accent); color: white; border: none;
+            border-radius: 50px; font-family: 'Inter', sans-serif;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            letter-spacing: 0.5px; transition: all 0.2s;
+        }
+        .cta-btn:hover:not(:disabled) {
+            background: var(--accent-light); transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(196, 121, 58, 0.3);
+        }
+        .cta-btn:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+
+        /* Status */
+        .status-msg {
+            text-align: center; padding: 12px; border-radius: 8px;
+            font-size: 14px; margin-top: 16px; display: none;
+        }
+        .status-msg.error {
+            display: block; background: #fde8e8; color: var(--red);
+        }
+        .status-msg.success {
+            display: block; background: #e8f8ee; color: var(--green);
+        }
+
+        /* Hidden */
+        .hidden { display: none !important; }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .container { padding: 24px 16px 60px; }
+            h1 { font-size: 1.6rem; }
+            .section { padding: 24px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <div>
+                    <div class="nav-logo-text">Envision Legacy</div>
+                    <div class="nav-tagline">Where Memories Live Again</div>
+                </div>
+            </a>
+            <a href="order.html" class="nav-back">← Back to Order</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Voice Clone</h1>
+        <p class="subtitle">Record or upload a voice sample and write the message you'd like to hear spoken in that voice.</p>
+
+        <!-- Step indicator -->
+        <div class="steps">
+            <div class="step-bar active" id="step1"></div>
+            <div class="step-bar" id="step2"></div>
+            <div class="step-bar" id="step3"></div>
+        </div>
+
+        <!-- Step 1: Voice Sample -->
+        <div id="voice-step" class="section">
+            <h2 class="section-title">Step 1 — Voice Sample</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-record" onclick="switchTab('record')">🎙️ Record</button>
+                <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">📁 Upload File</button>
+            </div>
+
+            <!-- Record tab -->
+            <div id="record-panel">
+                <div class="script-box">
+                    <span class="script-label">Read this aloud</span>
+                    "The summer sun warmed our faces as we walked through the old garden together. I remember the way you laughed, that bright joyful sound that could fill any room. Those quiet evenings on the porch, watching fireflies dance above the yard — those are the moments I hold closest."
+                </div>
+
+                <div class="record-area">
+                    <div class="timer" id="timer">0:00 / 0:20</div>
+                    <button class="record-btn" id="recordBtn" onclick="toggleRecording()" aria-label="Record voice"></button>
+                    <span class="record-label" id="recordLabel">Tap to Record</span>
+                    <div class="waveform-container">
+                        <canvas id="waveform"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload tab -->
+            <div id="upload-panel" class="hidden">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('audioFileInput').click()">
+                    <div class="upload-icon">🎵</div>
+                    <p class="upload-text">Drag & drop or <strong>browse</strong></p>
+                    <p class="upload-formats">MP3, WAV, M4A, MP4, MOV — max 25MB</p>
+                    <input type="file" id="audioFileInput" accept="audio/*,video/mp4,video/quicktime" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+
+            <!-- Audio preview (shared) -->
+            <div class="audio-preview" id="audioPreview">
+                <audio controls id="audioPlayer"></audio>
+                <button class="btn-remove" onclick="clearAudio()" aria-label="Remove recording">✕</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Message -->
+        <div id="message-step" class="section" style="opacity: 0.5; pointer-events: none;">
+            <h2 class="section-title">Step 2 — Your Message</h2>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                Write the words you'd like to hear spoken in this voice.
+            </p>
+            <div class="message-area">
+                <textarea id="messageText" placeholder="I'm so proud of you. I want you to know that I'm always with you, no matter what..." maxlength="500" oninput="updateCharCount()"></textarea>
+                <div class="message-hint">
+                    Write naturally — the AI will speak this in the cloned voice.
+                    <span class="char-count" id="charCount">0 / 500</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Checkout -->
+        <div id="checkout-step" class="section" style="opacity: 0.5; pointer-events: none;">
+            <h2 class="section-title">Step 3 — Complete Your Order</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <span style="font-weight: 600;">Voice Clone</span>
+                    <p style="color: var(--text-muted); font-size: 13px;">Hear them speak your message</p>
+                </div>
+                <span style="font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;">$49</span>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Your Email</label>
+                <input type="email" id="customerEmail" placeholder="you@email.com" style="width: 100%; padding: 12px 16px; border: 1px solid var(--card-border); border-radius: 8px; font-size: 15px; margin-top: 6px; font-family: 'Inter', sans-serif;">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Your Name</label>
+                <input type="text" id="customerName" placeholder="Your name" style="width: 100%; padding: 12px 16px; border: 1px solid var(--card-border); border-radius: 8px; font-size: 15px; margin-top: 6px; font-family: 'Inter', sans-serif;">
+            </div>
+            <button class="cta-btn" id="checkoutBtn" onclick="startCheckout()" disabled>
+                Proceed to Payment →
+            </button>
+            <div class="status-msg" id="statusMsg"></div>
+        </div>
+    </div>
+
+    <script>
+    // --- State ---
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let isRecording = false;
+    let timerInterval = null;
+    let elapsed = 0;
+    let analyser = null;
+    let animationId = null;
+    const MAX_DURATION = 25; // 25 seconds max
+
+    // --- Tab switching ---
+    function switchTab(tab) {
+        document.getElementById('tab-record').classList.toggle('active', tab === 'record');
+        document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+        document.getElementById('record-panel').classList.toggle('hidden', tab !== 'record');
+        document.getElementById('upload-panel').classList.toggle('hidden', tab !== 'upload');
+    }
+
+    // --- Recording ---
+    async function toggleRecording() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            await startRecording();
+        }
+    }
+
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream, { mimeType: getSupportedMimeType() });
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(t => t.stop());
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                audioBlob = new Blob(audioChunks, { type: mimeType });
+                showAudioPreview(audioBlob);
+                cancelAnimationFrame(animationId);
+            };
+
+            // Waveform visualizer
+            const audioCtx = new AudioContext();
+            const source = audioCtx.createMediaStreamSource(stream);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            drawWaveform();
+
+            mediaRecorder.start(100);
+            isRecording = true;
+            elapsed = 0;
+            updateTimer();
+            timerInterval = setInterval(() => {
+                elapsed++;
+                updateTimer();
+                if (elapsed >= MAX_DURATION) stopRecording();
+            }, 1000);
+
+            document.getElementById('recordBtn').classList.add('recording');
+            document.getElementById('recordLabel').textContent = 'Tap to Stop';
+        } catch (err) {
+            showStatus('Microphone access denied. Please allow microphone access and try again.', 'error');
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        isRecording = false;
+        clearInterval(timerInterval);
+        document.getElementById('recordBtn').classList.remove('recording');
+        document.getElementById('recordLabel').textContent = 'Tap to Re-record';
+    }
+
+    function getSupportedMimeType() {
+        const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+        for (const type of types) {
+            if (MediaRecorder.isTypeSupported(type)) return type;
+        }
+        return '';
+    }
+
+    function updateTimer() {
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        const el = document.getElementById('timer');
+        el.textContent = `${mins}:${secs.toString().padStart(2, '0')} / 0:${MAX_DURATION}`;
+        el.classList.toggle('warning', elapsed >= MAX_DURATION - 5);
+    }
+
+    // --- Waveform ---
+    function drawWaveform() {
+        const canvas = document.getElementById('waveform');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth * 2;
+        canvas.height = canvas.offsetHeight * 2;
+
+        function draw() {
+            animationId = requestAnimationFrame(draw);
+            if (!analyser) return;
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#c4793a';
+            ctx.beginPath();
+
+            const sliceWidth = canvas.width / dataArray.length;
+            let x = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = (v * canvas.height) / 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+        }
+        draw();
+    }
+
+    // --- File Upload ---
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 25 * 1024 * 1024) {
+            showStatus('File too large — max 25MB.', 'error');
+            return;
+        }
+
+        audioBlob = file;
+        showAudioPreview(file);
+    }
+
+    // Drag and drop
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            audioBlob = file;
+            showAudioPreview(file);
+        }
+    });
+
+    // --- Audio Preview ---
+    function showAudioPreview(blob) {
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = URL.createObjectURL(blob);
+        document.getElementById('audioPlayer').src = audioUrl;
+        document.getElementById('audioPreview').classList.add('visible');
+        unlockStep(2);
+    }
+
+    function clearAudio() {
+        audioBlob = null;
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        audioUrl = null;
+        document.getElementById('audioPreview').classList.remove('visible');
+        document.getElementById('audioPlayer').src = '';
+        document.getElementById('recordLabel').textContent = 'Tap to Record';
+        elapsed = 0;
+        updateTimer();
+        lockStep(2);
+    }
+
+    // --- Steps ---
+    function unlockStep(step) {
+        if (step >= 2) {
+            document.getElementById('message-step').style.opacity = '1';
+            document.getElementById('message-step').style.pointerEvents = 'auto';
+            document.getElementById('step1').classList.add('done');
+            document.getElementById('step2').classList.add('active');
+        }
+    }
+
+    function lockStep(step) {
+        if (step >= 2) {
+            document.getElementById('message-step').style.opacity = '0.5';
+            document.getElementById('message-step').style.pointerEvents = 'none';
+            document.getElementById('step1').classList.remove('done');
+            document.getElementById('step2').classList.remove('active');
+            lockStep(3);
+        }
+        if (step >= 3) {
+            document.getElementById('checkout-step').style.opacity = '0.5';
+            document.getElementById('checkout-step').style.pointerEvents = 'none';
+            document.getElementById('step2').classList.remove('done');
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('checkoutBtn').disabled = true;
+        }
+    }
+
+    // --- Message ---
+    function updateCharCount() {
+        const text = document.getElementById('messageText').value;
+        document.getElementById('charCount').textContent = `${text.length} / 500`;
+
+        if (text.trim().length >= 10) {
+            document.getElementById('checkout-step').style.opacity = '1';
+            document.getElementById('checkout-step').style.pointerEvents = 'auto';
+            document.getElementById('step2').classList.add('done');
+            document.getElementById('step3').classList.add('active');
+            document.getElementById('checkoutBtn').disabled = false;
+        } else {
+            lockStep(3);
+        }
+    }
+
+    // --- Checkout ---
+    async function startCheckout() {
+        const email = document.getElementById('customerEmail').value.trim();
+        const name = document.getElementById('customerName').value.trim();
+        const message = document.getElementById('messageText').value.trim();
+
+        if (!email || !email.includes('@')) {
+            showStatus('Please enter a valid email address.', 'error');
+            return;
+        }
+        if (!name) {
+            showStatus('Please enter your name.', 'error');
+            return;
+        }
+        if (!audioBlob) {
+            showStatus('Please record or upload a voice sample first.', 'error');
+            return;
+        }
+        if (message.length < 10) {
+            showStatus('Please write at least 10 characters for your message.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('checkoutBtn');
+        btn.disabled = true;
+        btn.textContent = 'Uploading voice sample...';
+        showStatus('', '');
+
+        try {
+            // Upload audio to Vercel Blob
+            const formData = new FormData();
+            const ext = audioBlob.type?.includes('mp4') ? 'mp4' : audioBlob.type?.includes('wav') ? 'wav' : 'webm';
+            formData.append('file', audioBlob, `voice-sample.${ext}`);
+
+            const uploadResp = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadResp.ok) throw new Error('Upload failed');
+            const uploadData = await uploadResp.json();
+
+            btn.textContent = 'Redirecting to payment...';
+
+            // Create checkout session
+            const checkoutResp = await fetch('/api/create-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    service: 'voice',
+                    customerName: name,
+                    customerEmail: email,
+                    uploadUrl: uploadData.url,
+                    message: message,
+                }),
+            });
+
+            if (!checkoutResp.ok) throw new Error('Checkout failed');
+            const { url } = await checkoutResp.json();
+            window.location.href = url;
+        } catch (err) {
+            showStatus('Something went wrong. Please try again.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment →';
+        }
+    }
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('statusMsg');
+        el.textContent = msg;
+        el.className = 'status-msg';
+        if (type) el.classList.add(type);
+    }
+    </script>
+</body>
+</html>

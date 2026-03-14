@@ -96,6 +96,40 @@ export default async function handler(req, res) {
         console.error('Failed to queue animation via QStash:', err);
       }
     }
+
+    // Phase 3: Trigger voice clone generation via QStash
+    if (service === 'voice' || service === 'bundle') {
+      const baseUrl = 'https://envision-legacy.vercel.app';
+
+      try {
+        const targetUrl = baseUrl + '/api/generate-voice';
+        const qstashUrl = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
+        const qstashResp = await fetch(qstashUrl + '/publish/' + targetUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          },
+          body: JSON.stringify({
+            voiceSampleUrl: uploadUrl,
+            customerEmail: email,
+            customerName,
+            voiceMessage: message || 'I love you and I miss you. I am always with you.',
+          }),
+        });
+
+        if (!qstashResp.ok) {
+          const qErr = await qstashResp.text();
+          console.error(`QStash voice publish failed (${qstashResp.status}):`, qErr);
+        } else {
+          const qData = await qstashResp.json();
+          console.log(`   ✅ Voice clone queued (messageId: ${qData.messageId})`);
+        }
+      } catch (err) {
+        console.error('Failed to queue voice clone via QStash:', err);
+      }
+    }
   }
 
   return res.status(200).json({ received: true });

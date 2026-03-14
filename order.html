@@ -625,6 +625,12 @@
         // --- Service Selection ---
         serviceCards.forEach(card => {
             card.addEventListener('click', () => {
+                // Voice Clone has its own dedicated page
+                if (card.dataset.service === 'voice') {
+                    window.location.href = 'voice-record.html';
+                    return;
+                }
+
                 serviceCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
                 selectedService = card.dataset.service;
