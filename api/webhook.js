@@ -141,6 +141,50 @@ export default async function handler(req, res) {
         console.error('Failed to queue voice clone via QStash:', err);
       }
     }
+
+    // Phase 4: Trigger photo book generation via QStash
+    if (service === 'photobook') {
+      const baseUrl = 'https://envision-legacy.vercel.app';
+
+      // Reassemble photoUrls from metadata chunks
+      let photoUrlsStr = session.metadata.photoUrls || '';
+      if (!photoUrlsStr) {
+        for (let i = 0; ; i++) {
+          const chunk = session.metadata[`photoUrls_${i}`];
+          if (!chunk) break;
+          photoUrlsStr += chunk;
+        }
+      }
+
+      try {
+        const targetUrl = baseUrl + '/api/generate-photobook';
+        const qstashUrl = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
+        const qstashResp = await fetch(qstashUrl + '/publish/' + targetUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          },
+          body: JSON.stringify({
+            photoUrls: photoUrlsStr,
+            albumTitle: session.metadata.albumTitle || 'My Photo Book',
+            customerEmail: email,
+            customerName,
+          }),
+        });
+
+        if (!qstashResp.ok) {
+          const qErr = await qstashResp.text();
+          console.error(`QStash photobook publish failed (${qstashResp.status}):`, qErr);
+        } else {
+          const qData = await qstashResp.json();
+          console.log(`   ✅ Photo book queued (messageId: ${qData.messageId})`);
+        }
+      } catch (err) {
+        console.error('Failed to queue photo book via QStash:', err);
+      }
+    }
   }
 
   return res.status(200).json({ received: true });
@@ -152,6 +196,7 @@ function getServiceName(service) {
     voice: 'Voice Clone',
     avatar: 'AI Avatar',
     bundle: 'Full Legacy Bundle',
+    photobook: 'Photo Book',
   };
   return names[service] || service;
 }

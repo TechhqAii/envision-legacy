@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create a digital photo book — upload up to 10 photos and watch them come alive with AI animation.">
+    <title>Photo Book — Envision Legacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ede8e1;
+            --card-bg: #f8f4ee;
+            --card-border: #e8e0d4;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555;
+            --text-muted: #8b775a;
+            --accent: #c4793a;
+            --accent-light: #d4915a;
+            --accent-glow: rgba(196, 121, 58, 0.15);
+            --shadow-soft: rgba(0, 0, 0, 0.06);
+            --success: #2ecc71;
+            --danger: #e74c3c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(237, 232, 225, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 16px 32px;
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--text-primary);
+        }
+        .nav-logo img { height: 32px; width: 32px; border-radius: 50%; }
+        .logo-text {
+            font-family: 'Anton', sans-serif;
+            font-size: 18px; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .nav-back {
+            font-size: 14px; color: var(--text-muted);
+            text-decoration: none; transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--accent); }
+
+        /* Hero */
+        .page-hero {
+            text-align: center;
+            padding: 48px 32px 32px;
+            max-width: 700px; margin: 0 auto;
+        }
+        .page-hero h1 {
+            font-family: 'Anton', sans-serif;
+            font-size: 38px; letter-spacing: 3px;
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .page-hero .subtitle {
+            font-size: 15px; color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .page-hero .price-tag {
+            display: inline-block; margin-top: 12px;
+            font-family: 'Anton', sans-serif;
+            font-size: 28px; color: var(--accent);
+            letter-spacing: 1px;
+        }
+        .page-hero .price-tag span {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px; color: var(--text-muted);
+            font-weight: 400; letter-spacing: 0;
+        }
+
+        /* Progress */
+        .progress-bar {
+            display: flex; justify-content: center; gap: 8px;
+            padding: 0 32px 32px;
+            max-width: 500px; margin: 0 auto;
+        }
+        .progress-step {
+            flex: 1; height: 4px;
+            background: var(--card-border);
+            border-radius: 4px;
+            transition: background 0.4s ease;
+        }
+        .progress-step.active { background: var(--accent); }
+
+        /* Main container */
+        .book-container {
+            max-width: 700px; margin: 0 auto;
+            padding: 0 32px 60px;
+        }
+
+        /* Album title */
+        .album-title-section {
+            margin-bottom: 28px;
+        }
+        .album-title-section label {
+            display: block; font-weight: 600;
+            font-size: 14px; margin-bottom: 8px;
+        }
+        .album-title-input {
+            width: 100%; padding: 14px 16px;
+            border: 2px solid var(--card-border);
+            border-radius: 12px; font-size: 16px;
+            font-family: 'Playfair Display', serif;
+            background: var(--card-bg);
+            transition: border-color 0.3s;
+        }
+        .album-title-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed var(--card-border);
+            border-radius: 16px; padding: 40px 24px;
+            text-align: center;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 24px;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(196, 121, 58, 0.05);
+        }
+        .upload-zone.disabled {
+            opacity: 0.5; cursor: not-allowed;
+            pointer-events: none;
+        }
+        .upload-zone svg { color: var(--accent); margin-bottom: 10px; }
+        .upload-zone p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+        .upload-zone .browse {
+            color: var(--accent); font-weight: 600;
+            text-decoration: underline; cursor: pointer;
+        }
+        .photo-count {
+            font-size: 13px; color: var(--text-muted);
+            text-align: center; margin-top: -16px;
+            margin-bottom: 20px;
+        }
+
+        /* Photo grid */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .photo-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .photo-item:hover { transform: translateY(-2px); }
+        .photo-item img {
+            width: 100%; aspect-ratio: 1;
+            object-fit: cover; display: block;
+        }
+        .photo-item .remove-btn {
+            position: absolute; top: 6px; right: 6px;
+            width: 24px; height: 24px;
+            background: rgba(0,0,0,0.6); color: white;
+            border: none; border-radius: 50%;
+            font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .photo-item:hover .remove-btn { opacity: 1; }
+        .photo-caption {
+            padding: 8px;
+        }
+        .photo-caption input {
+            width: 100%; border: none;
+            background: transparent;
+            font-size: 12px; color: var(--text-secondary);
+            font-family: 'Playfair Display', serif;
+            font-style: italic; text-align: center;
+            padding: 4px;
+        }
+        .photo-caption input:focus {
+            outline: none;
+            border-bottom: 1px solid var(--accent);
+        }
+        .photo-caption input::placeholder {
+            color: #bbb;
+        }
+
+        /* Checkout section */
+        .checkout-section {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-top: 16px;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+        .checkout-section.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .checkout-section h3 {
+            font-family: 'Anton', sans-serif;
+            font-size: 20px; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 4px;
+        }
+        .checkout-section .checkout-sub {
+            font-size: 13px; color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block; font-size: 13px;
+            font-weight: 600; margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%; padding: 12px 14px;
+            border: 2px solid var(--card-border);
+            border-radius: 10px; font-size: 14px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .checkout-btn {
+            width: 100%; padding: 16px;
+            background: var(--accent); color: white;
+            border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+        .checkout-btn:hover {
+            background: var(--accent-light);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(196, 121, 58, 0.3);
+        }
+        .checkout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .checkout-summary {
+            display: flex; justify-content: space-between;
+            align-items: center;
+            padding: 12px 0; margin-bottom: 8px;
+            border-top: 1px solid var(--card-border);
+        }
+        .checkout-summary .label {
+            font-size: 14px; color: var(--text-secondary);
+        }
+        .checkout-summary .amount {
+            font-family: 'Anton', sans-serif;
+            font-size: 24px; color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .page-hero h1 { font-size: 28px; }
+            .photo-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <img src="images/logo.png" alt="Envision Legacy logo">
+                <span class="logo-text">Envision Legacy</span>
+            </a>
+            <a href="order.html" class="nav-back">← Back to Order</a>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <h1>Photo Book</h1>
+        <p class="subtitle">Upload up to 10 cherished photos. Each one will be brought to life with AI animation and compiled into a beautiful, shareable digital album.</p>
+        <div class="price-tag">$29.99 <span>up to 10 photos</span></div>
+    </section>
+
+    <div class="progress-bar">
+        <div class="progress-step active"></div>
+        <div class="progress-step"></div>
+        <div class="progress-step"></div>
+    </div>
+
+    <div class="book-container">
+
+        <!-- Album Title -->
+        <div class="album-title-section">
+            <label for="album-title">Album Title</label>
+            <input type="text" id="album-title" class="album-title-input"
+                   placeholder="Our Family Memories" maxlength="60">
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="upload-zone">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Drag & drop photos here, or <span class="browse">browse files</span></p>
+            <p style="font-size: 12px; margin-top: 6px;">JPG, PNG, WebP — up to 10MB each</p>
+        </div>
+        <input type="file" id="file-input" class="file-input" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
+        <p class="photo-count" id="photo-count">0 / 10 photos added</p>
+
+        <!-- Photo Grid -->
+        <div class="photo-grid" id="photo-grid"></div>
+
+        <!-- Checkout -->
+        <div class="checkout-section" id="checkout-section">
+            <h3>Complete Your Photo Book</h3>
+            <p class="checkout-sub">We'll animate each photo and deliver your digital album via email within 24 hours.</p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="customer-email">Email *</label>
+                    <input type="email" id="customer-email" placeholder="you@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="customer-name">Your Name *</label>
+                    <input type="text" id="customer-name" placeholder="Your name" required>
+                </div>
+            </div>
+
+            <div class="checkout-summary">
+                <span class="label">Photo Book (<span id="summary-count">0</span> photos)</span>
+                <span class="amount">$29.99</span>
+            </div>
+
+            <button class="checkout-btn" id="checkout-btn" disabled>
+                Create My Photo Book — $29.99
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+    (function() {
+        const MAX_PHOTOS = 10;
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const photoGrid = document.getElementById('photo-grid');
+        const photoCount = document.getElementById('photo-count');
+        const checkoutSection = document.getElementById('checkout-section');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const summaryCount = document.getElementById('summary-count');
+        const progressSteps = document.querySelectorAll('.progress-step');
+
+        let photos = []; // { file, preview, caption }
+
+        // --- Upload Zone Events ---
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            fileInput.value = '';
+        });
+
+        function handleFiles(fileList) {
+            const files = Array.from(fileList);
+            for (const file of files) {
+                if (photos.length >= MAX_PHOTOS) {
+                    alert(`Maximum ${MAX_PHOTOS} photos allowed.`);
+                    break;
+                }
+                if (!ALLOWED_TYPES.includes(file.type)) {
+                    alert(`${file.name} is not a supported format. Use JPG, PNG, or WebP.`);
+                    continue;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`${file.name} is too large. Max 10MB per photo.`);
+                    continue;
+                }
+                const preview = URL.createObjectURL(file);
+                photos.push({ file, preview, caption: '' });
+            }
+            renderGrid();
+            updateState();
+        }
+
+        function renderGrid() {
+            photoGrid.innerHTML = '';
+            photos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                item.innerHTML = `
+                    <img src="${photo.preview}" alt="Photo ${index + 1}">
+                    <button class="remove-btn" data-index="${index}" title="Remove">&times;</button>
+                    <div class="photo-caption">
+                        <input type="text" placeholder="Add a caption..." value="${photo.caption}"
+                               data-index="${index}" maxlength="60">
+                    </div>
+                `;
+                photoGrid.appendChild(item);
+            });
+
+            // Remove buttons
+            photoGrid.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    URL.revokeObjectURL(photos[idx].preview);
+                    photos.splice(idx, 1);
+                    renderGrid();
+                    updateState();
+                });
+            });
+
+            // Caption inputs
+            photoGrid.querySelectorAll('.photo-caption input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    photos[idx].caption = e.target.value;
+                });
+            });
+        }
+
+        function updateState() {
+            const count = photos.length;
+            photoCount.textContent = `${count} / ${MAX_PHOTOS} photos added`;
+            summaryCount.textContent = count;
+
+            // Progress
+            progressSteps[0].classList.add('active');
+            progressSteps[1].classList.toggle('active', count > 0);
+            progressSteps[2].classList.toggle('active', count >= 1);
+
+            // Upload zone disabled at max
+            if (count >= MAX_PHOTOS) {
+                uploadZone.classList.add('disabled');
+            } else {
+                uploadZone.classList.remove('disabled');
+            }
+
+            // Checkout active if at least 1 photo
+            if (count >= 1) {
+                checkoutSection.classList.add('active');
+            } else {
+                checkoutSection.classList.remove('active');
+            }
+
+            validateCheckout();
+        }
+
+        function validateCheckout() {
+            const email = document.getElementById('customer-email').value.trim();
+            const name = document.getElementById('customer-name').value.trim();
+            const hasPhotos = photos.length >= 1;
+            const validEmail = email && email.includes('@');
+            checkoutBtn.disabled = !(hasPhotos && validEmail && name);
+        }
+
+        document.getElementById('customer-email').addEventListener('input', validateCheckout);
+        document.getElementById('customer-name').addEventListener('input', validateCheckout);
+
+        // --- Checkout ---
+        checkoutBtn.addEventListener('click', async () => {
+            if (checkoutBtn.disabled) return;
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = 'Uploading photos...';
+
+            try {
+                // 1. Upload all photos to Vercel Blob
+                const photoUrls = [];
+                for (let i = 0; i < photos.length; i++) {
+                    checkoutBtn.textContent = `Uploading photo ${i + 1} of ${photos.length}...`;
+
+                    const formData = new FormData();
+                    formData.append('file', photos[i].file);
+
+                    const uploadResp = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (!uploadResp.ok) throw new Error('Photo upload failed');
+                    const uploadData = await uploadResp.json();
+                    photoUrls.push({
+                        url: uploadData.url,
+                        caption: photos[i].caption || `Photo ${i + 1}`,
+                    });
+                }
+
+                checkoutBtn.textContent = 'Creating checkout...';
+
+                // 2. Create Stripe checkout
+                const email = document.getElementById('customer-email').value.trim();
+                const name = document.getElementById('customer-name').value.trim();
+                const albumTitle = document.getElementById('album-title').value.trim() || 'My Photo Book';
+
+                const checkoutResp = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: 'photobook',
+                        email,
+                        name,
+                        albumTitle,
+                        photoUrls: JSON.stringify(photoUrls),
+                    }),
+                });
+
+                if (!checkoutResp.ok) throw new Error('Checkout creation failed');
+                const checkoutData = await checkoutResp.json();
+
+                // 3. Redirect to Stripe
+                window.location.href = checkoutData.url;
+
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('Something went wrong. Please try again.');
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Create My Photo Book — $29.99';
+            }
+        });
+    })();
+    </script>
+
+</body>
+</html>

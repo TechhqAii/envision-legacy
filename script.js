@@ -15,27 +15,6 @@
             image: "images/grandma_child.png"
         },
         {
-            title: "First Ride",
-            date: "1954",
-            caption: "First Ride, 1954",
-            description: "A father's steady hand guiding his son on a first bicycle ride down a tree-lined street. That perfect balance between holding on and letting go — the very essence of parenthood captured in a single frame.",
-            image: "images/father_son_bike.png"
-        },
-        {
-            title: "The Dance",
-            date: "1963",
-            caption: "The Dance, 1963",
-            description: "Two people lost in each other at a backyard gathering, string lights painting the evening gold. The music has long since faded, but the feeling of that dance lives on in everyone who witnessed it.",
-            image: "images/couple_dancing.png"
-        },
-        {
-            title: "Welcome Home",
-            date: "1945",
-            caption: "Welcome Home, 1945",
-            description: "A soldier's return — that electric moment of reunion at Track 7. After years of letters and prayers, the embrace that made the whole world disappear. Some homecomings change everything.",
-            image: "images/soldiers_homecoming.png"
-        },
-        {
             title: "Sunday in the Park",
             date: "1955",
             caption: "Sunday in the Park, 1955",
@@ -64,13 +43,6 @@
             image: "images/mother_daughter.png"
         },
         {
-            title: "Summer Days",
-            date: "1965",
-            caption: "Summer Days, 1965",
-            description: "Barefoot kids chasing each other through the sprinkler on the hottest day of the year. No screens, no schedules — just the simple joy of cold water and green grass and unending summer afternoons.",
-            image: "images/kids_playing.png"
-        },
-        {
             title: "Make a Wish",
             date: "1957",
             caption: "Make a Wish, 1957",
@@ -90,6 +62,34 @@
             caption: "Graduation Day, 1966",
             description: "The hug that said everything words couldn't. Years of sacrifice, late nights, and belief in her dreams — all worth it in this single, perfect moment. A father's pride, a daughter's triumph.",
             image: "images/graduation_day.png"
+        },
+        {
+            title: "First Ride",
+            date: "1954",
+            caption: "First Ride, 1954",
+            description: "A father's steady hand guiding his son on a first bicycle ride down a tree-lined street. That perfect balance between holding on and letting go — the very essence of parenthood captured in a single frame.",
+            image: "images/father_son_bike.png"
+        },
+        {
+            title: "The Dance",
+            date: "1963",
+            caption: "The Dance, 1963",
+            description: "Two people lost in each other at a backyard gathering, string lights painting the evening gold. The music has long since faded, but the feeling of that dance lives on in everyone who witnessed it.",
+            image: "images/couple_dancing.png"
+        },
+        {
+            title: "Welcome Home",
+            date: "1945",
+            caption: "Welcome Home, 1945",
+            description: "A soldier's return — that electric moment of reunion at Track 7. After years of letters and prayers, the embrace that made the whole world disappear. Some homecomings change everything.",
+            image: "images/soldiers_homecoming.png"
+        },
+        {
+            title: "Summer Days",
+            date: "1965",
+            caption: "Summer Days, 1965",
+            description: "Barefoot kids chasing each other through the sprinkler on the hottest day of the year. No screens, no schedules — just the simple joy of cold water and green grass and unending summer afternoons.",
+            image: "images/kids_playing.png"
         }
     ];
 
