@@ -3,6 +3,7 @@ import { put } from '@vercel/blob';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const HEYGEN_API = 'https://api.heygen.com';
+const HEYGEN_UPLOAD = 'https://upload.heygen.com';
 const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const BASE_URL = 'https://envision-legacy.vercel.app';
 const MAX_POLLS = 60; // 60 × 10s = ~10 min max
@@ -253,7 +254,7 @@ async function uploadAssetToHeyGen(apiKey, buffer, filename, contentType) {
     Buffer.from(footer),
   ]);
 
-  const resp = await fetch(`${HEYGEN_API}/v1/asset`, {
+  const resp = await fetch(`${HEYGEN_UPLOAD}/v1/asset`, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
