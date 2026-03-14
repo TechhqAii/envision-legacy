@@ -178,9 +178,16 @@ async function handleSynthesize(res, body) {
       body: JSON.stringify({
         text: voiceMessage,
         reference_id: modelId,
-        format: 'mp3',
-        latency: 'normal',
-        normalize: true,
+        // --- Quality tuning ---
+        format: 'wav',              // Lossless audio (vs compressed MP3)
+        mp3_bitrate: 192,           // Fallback if WAV not supported
+        sample_rate: 44100,         // CD-quality 44.1kHz
+        latency: 'normal',          // Best quality mode
+        top_p: 0.9,                 // Natural variation (S1 recommended)
+        temperature: 0.9,           // Expressive, emotional output
+        repetition_penalty: 1.2,    // Prevents robotic repetition
+        chunk_length: 200,          // Better phrasing for emotional content
+        normalize: true,            // Even volume levels
       }),
     });
 
@@ -205,11 +212,14 @@ async function handleSynthesize(res, body) {
 
     // Got audio — upload to Vercel Blob
     const audioBuffer = Buffer.from(await ttsResp.arrayBuffer());
-    console.log(`   ✅ Synthesized: ${audioBuffer.length} bytes`);
+    const isWav = contentType.includes('wav') || contentType.includes('pcm');
+    const fileExt = isWav ? 'wav' : 'mp3';
+    const blobType = isWav ? 'audio/wav' : 'audio/mpeg';
+    console.log(`   ✅ Synthesized: ${audioBuffer.length} bytes (${contentType})`);
 
-    const blob = await put(`voices/clone-${Date.now()}.mp3`, audioBuffer, {
+    const blob = await put(`voices/clone-${Date.now()}.${fileExt}`, audioBuffer, {
       access: 'public',
-      contentType: 'audio/mpeg',
+      contentType: blobType,
     });
 
     console.log(`   ☁️ Uploaded to Blob: ${blob.url}`);
