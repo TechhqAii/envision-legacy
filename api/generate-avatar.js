@@ -55,30 +55,6 @@ function normalizeContentType(contentType) {
   return map[base] || base;
 }
 
-// --- Upload asset to HeyGen ---
-async function uploadAssetToHeyGen(apiKey, buffer, filename, contentType) {
-  const normalizedType = normalizeContentType(contentType);
-  console.log(`   Content-Type: ${contentType} → ${normalizedType}`);
-
-  const resp = await fetch(`${HEYGEN_UPLOAD}/v1/asset`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': normalizedType,
-    },
-    body: buffer,
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Asset upload failed (${resp.status}): ${errText.substring(0, 300)}`);
-  }
-
-  const data = await resp.json();
-  console.log(`   Upload response: ${JSON.stringify(data).substring(0, 200)}`);
-  return data.data?.id || data.data?.asset_id || data.data?.talking_photo_id;
-}
-
 // ===== MAIN HANDLER =====
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', BASE_URL);
@@ -101,13 +77,12 @@ export default async function handler(req, res) {
   }
 
   // Route based on phase
-  const { phase, videoId } = body;
-  if (phase === 'poll_avatar') return handlePollAvatar(res, body);
-  if (phase === 'poll_video' || videoId) return handlePollVideo(res, body);
+  const { videoId } = body;
+  if (videoId) return handlePollVideo(res, body);
   return handleGenerateAvatar(res, body);
 }
 
-// ===== PHASE 1: Upload audio, create Photo Avatar, schedule polls =====
+// ===== STEP 1: Upload audio + photo, then generate video =====
 async function handleGenerateAvatar(res, body) {
   const { audioUrl, photoUrl, customerEmail, customerName } = body;
 
@@ -123,7 +98,7 @@ async function handleGenerateAvatar(res, body) {
   }
 
   try {
-    // 1. Download and upload audio to HeyGen
+    // 1. Download and upload AUDIO to HeyGen asset
     console.log(`   📥 Downloading audio: ${audioUrl}`);
     const audioResp = await fetch(audioUrl);
     if (!audioResp.ok) throw new Error(`Audio download failed: ${audioResp.status}`);
@@ -131,143 +106,62 @@ async function handleGenerateAvatar(res, body) {
     const audioType = audioResp.headers.get('content-type') || 'audio/wav';
     console.log(`   Downloaded audio: ${audioBuffer.length} bytes (${audioType})`);
 
-    console.log(`   📤 Uploading audio to HeyGen...`);
-    const audioAssetId = await uploadAssetToHeyGen(apiKey, audioBuffer, 'audio.wav', audioType);
-    console.log(`   ✅ Audio asset: ${audioAssetId}`);
-
-    // 2. Create Photo Avatar using the photo URL directly
-    //    The HeyGen v2 Photo Avatar API accepts image_url
-    console.log(`   📸 Creating Photo Avatar from: ${photoUrl}`);
-    const createResp = await fetch(`${HEYGEN_API}/v2/photo_avatar`, {
+    const normalizedAudioType = normalizeContentType(audioType);
+    console.log(`   📤 Uploading audio to HeyGen (${audioType} → ${normalizedAudioType})...`);
+    const audioUploadResp = await fetch(`${HEYGEN_UPLOAD}/v1/asset`, {
       method: 'POST',
       headers: {
-        'accept': 'application/json',
-        'content-type': 'application/json',
         'x-api-key': apiKey,
+        'Content-Type': normalizedAudioType,
       },
-      body: JSON.stringify({
-        image_url: photoUrl,
-      }),
+      body: audioBuffer,
     });
-
-    const createText = await createResp.text();
-    console.log(`   Photo Avatar API (${createResp.status}): ${createText.substring(0, 400)}`);
-
-    if (!createResp.ok) {
-      throw new Error(`Photo Avatar creation failed (${createResp.status}): ${createText.substring(0, 400)}`);
+    if (!audioUploadResp.ok) {
+      const err = await audioUploadResp.text();
+      throw new Error(`Audio upload failed (${audioUploadResp.status}): ${err.substring(0, 300)}`);
     }
+    const audioData = await audioUploadResp.json();
+    const audioAssetId = audioData.data?.id || audioData.data?.asset_id;
+    console.log(`   ✅ Audio asset: ${audioAssetId}`);
 
-    const createData = JSON.parse(createText);
-    // Extract IDs from the response
-    const photoAvatarId = createData.data?.photo_avatar_id || createData.data?.avatar_id || createData.data?.id;
-    const generationId = createData.data?.generation_id;
-    const lookId = createData.data?.look_id;
+    // 2. Download and upload PHOTO as a Talking Photo
+    //    Endpoint: upload.heygen.com/v1/talking_photo
+    //    This directly registers the image as a talking_photo
+    console.log(`   📥 Downloading photo: ${photoUrl}`);
+    const photoResp = await fetch(photoUrl);
+    if (!photoResp.ok) throw new Error(`Photo download failed: ${photoResp.status}`);
+    const photoBuffer = Buffer.from(await photoResp.arrayBuffer());
+    const photoType = photoResp.headers.get('content-type') || 'image/jpeg';
+    console.log(`   Downloaded photo: ${photoBuffer.length} bytes (${photoType})`);
 
-    console.log(`   ✅ Photo Avatar response: avatar=${photoAvatarId}, generation=${generationId}, look=${lookId}`);
-
-    // If we already got a look_id, we can go straight to video generation
-    if (lookId) {
-      console.log(`   🎬 Look ready, proceeding to video generation...`);
-      await schedulePoll({
-        phase: 'generate_video',
-        photoAvatarId,
-        lookId,
-        audioAssetId,
-        customerEmail,
-        customerName,
-      }, '5s');
-    } else {
-      // Need to poll for the photo avatar to be ready
-      await schedulePoll({
-        phase: 'poll_avatar',
-        photoAvatarId,
-        generationId,
-        audioAssetId,
-        customerEmail,
-        customerName,
-        pollCount: 1,
-      }, '15s');
-    }
-
-    return res.status(200).json({ success: true, status: 'creating_avatar', photoAvatarId });
-  } catch (err) {
-    console.error('Avatar generation failed:', err.message);
-    await sendFailureNotification(customerName, customerEmail, err.message);
-    return res.status(500).json({ error: err.message });
-  }
-}
-
-// ===== PHASE 2: Poll for Photo Avatar readiness, then generate video =====
-async function handlePollAvatar(res, body) {
-  const { photoAvatarId, generationId, audioAssetId, customerEmail, customerName, pollCount = 0 } = body;
-  const apiKey = process.env.HEYGEN_API_KEY;
-
-  console.log(`📸 Photo Avatar Poll #${pollCount} — ${customerName} (avatar: ${photoAvatarId})`);
-
-  if (pollCount > MAX_POLLS) {
-    await sendFailureNotification(customerName, customerEmail, 'Photo Avatar creation timed out');
-    return res.status(200).json({ success: false, error: 'Timed out' });
-  }
-
-  try {
-    // Check photo avatar generation status
-    const checkUrl = generationId
-      ? `${HEYGEN_API}/v2/photo_avatar/generation_status?generation_id=${generationId}`
-      : `${HEYGEN_API}/v2/photo_avatar/${photoAvatarId}`;
-
-    const statusResp = await fetch(checkUrl, {
-      method: 'GET',
+    const normalizedPhotoType = normalizeContentType(photoType);
+    console.log(`   📤 Uploading photo as Talking Photo (${normalizedPhotoType})...`);
+    const talkingPhotoResp = await fetch(`${HEYGEN_UPLOAD}/v1/talking_photo`, {
+      method: 'POST',
       headers: {
-        'accept': 'application/json',
         'x-api-key': apiKey,
+        'Content-Type': normalizedPhotoType,
       },
+      body: photoBuffer,
     });
 
-    const statusText = await statusResp.text();
-    console.log(`   Status response (${statusResp.status}): ${statusText.substring(0, 300)}`);
+    const talkingPhotoText = await talkingPhotoResp.text();
+    console.log(`   Talking Photo response (${talkingPhotoResp.status}): ${talkingPhotoText.substring(0, 300)}`);
 
-    const statusData = JSON.parse(statusText);
-    const status = statusData.data?.status;
-    const lookId = statusData.data?.look_id || statusData.data?.looks?.[0]?.id;
-
-    if ((status === 'completed' || status === 'ready' || status === 'success') && (lookId || photoAvatarId)) {
-      // Photo avatar is ready — generate the video
-      console.log(`   ✅ Photo Avatar ready! look_id=${lookId}`);
-      await schedulePoll({
-        phase: 'generate_video',
-        photoAvatarId,
-        lookId: lookId || photoAvatarId,
-        audioAssetId,
-        customerEmail,
-        customerName,
-      }, '3s');
-      return res.status(200).json({ status: 'avatar_ready', lookId });
-    } else if (status === 'failed' || status === 'error') {
-      throw new Error(`Photo Avatar creation failed: ${statusText.substring(0, 300)}`);
-    } else {
-      // Still processing
-      console.log(`   ⏳ Photo Avatar status: ${status || 'unknown'}, polling again...`);
-      await schedulePoll({
-        ...body,
-        pollCount: pollCount + 1,
-      }, '10s');
-      return res.status(200).json({ status: 'processing' });
+    if (!talkingPhotoResp.ok) {
+      throw new Error(`Talking Photo upload failed (${talkingPhotoResp.status}): ${talkingPhotoText.substring(0, 300)}`);
     }
-  } catch (err) {
-    console.error('Photo Avatar poll error:', err.message);
-    await sendFailureNotification(customerName, customerEmail, err.message);
-    return res.status(200).json({ success: false, error: err.message });
-  }
-}
 
-// ===== PHASE 3: Generate video using Photo Avatar =====
-async function handleGenerateVideo(res, body) {
-  const { photoAvatarId, lookId, audioAssetId, customerEmail, customerName } = body;
-  const apiKey = process.env.HEYGEN_API_KEY;
+    const talkingPhotoData = JSON.parse(talkingPhotoText);
+    const talkingPhotoId = talkingPhotoData.data?.talking_photo_id || talkingPhotoData.data?.id;
+    console.log(`   ✅ Talking Photo ID: ${talkingPhotoId}`);
 
-  console.log(`🎬 Video Generation — ${customerName} (avatar: ${photoAvatarId}, look: ${lookId})`);
+    if (!talkingPhotoId) {
+      throw new Error(`No talking_photo_id in response: ${talkingPhotoText.substring(0, 300)}`);
+    }
 
-  try {
+    // 3. Generate the talking head video
+    console.log(`   🎬 Generating avatar video...`);
     const videoGenResp = await fetch(`${HEYGEN_API}/v2/video/generate`, {
       method: 'POST',
       headers: {
@@ -279,9 +173,8 @@ async function handleGenerateVideo(res, body) {
         video_inputs: [
           {
             character: {
-              type: 'photo_avatar',
-              photo_avatar_id: photoAvatarId,
-              look_id: lookId,
+              type: 'talking_photo',
+              talking_photo_id: talkingPhotoId,
             },
             voice: {
               type: 'audio',
@@ -296,48 +189,42 @@ async function handleGenerateVideo(res, body) {
       }),
     });
 
-    const genText = await videoGenResp.text();
-    console.log(`   Video generate response (${videoGenResp.status}): ${genText.substring(0, 400)}`);
+    const videoGenText = await videoGenResp.text();
+    console.log(`   Video generate (${videoGenResp.status}): ${videoGenText.substring(0, 400)}`);
 
     if (!videoGenResp.ok) {
-      throw new Error(`Video generation failed (${videoGenResp.status}): ${genText.substring(0, 400)}`);
+      throw new Error(`Video generation failed (${videoGenResp.status}): ${videoGenText.substring(0, 400)}`);
     }
 
-    const videoGenData = JSON.parse(genText);
+    const videoGenData = JSON.parse(videoGenText);
     const newVideoId = videoGenData.data?.video_id;
 
     if (!newVideoId) {
-      throw new Error(`No video_id in response: ${genText.substring(0, 300)}`);
+      throw new Error(`No video_id: ${videoGenText.substring(0, 300)}`);
     }
 
     console.log(`   ✅ Video generation started: ${newVideoId}`);
 
-    // Schedule polling for video completion
+    // 4. Schedule polling for video completion
     await schedulePoll({
-      phase: 'poll_video',
       videoId: newVideoId,
       customerEmail,
       customerName,
       pollCount: 1,
     }, '30s');
 
-    return res.status(200).json({ success: true, status: 'generating_video', videoId: newVideoId });
+    return res.status(200).json({ success: true, status: 'generating', videoId: newVideoId });
   } catch (err) {
-    console.error('Video generation failed:', err.message);
+    console.error('Avatar generation failed:', err.message);
     await sendFailureNotification(customerName, customerEmail, err.message);
-    return res.status(200).json({ success: false, error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
 
-// ===== PHASE 4: Poll for video completion =====
+// ===== STEP 2: Poll for video completion =====
 async function handlePollVideo(res, body) {
   const { videoId, customerEmail, customerName, pollCount = 0 } = body;
   const apiKey = process.env.HEYGEN_API_KEY;
-
-  // Handle generate_video phase (not a poll — actually generates the video)
-  if (body.phase === 'generate_video') {
-    return handleGenerateVideo(res, body);
-  }
 
   console.log(`🎬 Video Poll #${pollCount} — ${customerName} (video: ${videoId})`);
 
@@ -377,16 +264,13 @@ async function handlePollVideo(res, body) {
       const videoBuffer = Buffer.from(await videoResp.arrayBuffer());
       console.log(`   Downloaded: ${videoBuffer.length} bytes`);
 
-      // Upload to Vercel Blob
       const blob = await put(`avatars/avatar-${Date.now()}.mp4`, videoBuffer, {
         access: 'public',
         contentType: 'video/mp4',
       });
       console.log(`   ☁️ Uploaded to Blob: ${blob.url}`);
 
-      // Send delivery email
       await sendDeliveryEmails(customerEmail, customerName, blob.url);
-
       return res.status(200).json({ success: true, videoUrl: blob.url });
     } else if (status === 'failed') {
       const errorMsg = statusData.data?.error || 'Video generation failed';
@@ -405,7 +289,7 @@ async function handlePollVideo(res, body) {
   }
 }
 
-// ===== EMAIL =====
+// ===== EMAILS =====
 async function sendDeliveryEmails(customerEmail, customerName, videoUrl) {
   try {
     await resend.emails.send({
