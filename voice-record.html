@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Record your loved one's voice for AI cloning — Envision Legacy">
     <title>Voice Recording — Envision Legacy</title>
+    <meta name="service" id="serviceMeta">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -296,14 +297,15 @@
     </nav>
 
     <div class="container">
-        <h1>Voice Clone</h1>
-        <p class="subtitle">Record or upload a voice sample and write the message you'd like to hear spoken in that voice.</p>
+        <h1 id="pageTitle">Voice Clone</h1>
+        <p class="subtitle" id="pageSubtitle">Record or upload a voice sample and write the message you'd like to hear spoken in that voice.</p>
 
         <!-- Step indicator -->
-        <div class="steps">
+        <div class="steps" id="stepsContainer">
             <div class="step-bar active" id="step1"></div>
             <div class="step-bar" id="step2"></div>
             <div class="step-bar" id="step3"></div>
+            <div class="step-bar" id="step4" style="display: none;"></div>
         </div>
 
         <!-- Step 1: Voice Sample -->
@@ -384,15 +386,33 @@
             </div>
         </div>
 
-        <!-- Step 3: Checkout -->
+        <!-- Step 3: Photo Upload (Avatar mode only) -->
+        <div id="photo-step" class="section" style="display: none; opacity: 0.5; pointer-events: none;">
+            <h2 class="section-title">Step 3 — Upload Their Photo</h2>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                Upload a clear, front-facing photo. This is the face that will come alive and speak your message.
+            </p>
+            <div class="upload-zone" id="photoUploadZone" onclick="document.getElementById('photoFileInput').click()">
+                <div class="upload-icon">📸</div>
+                <p class="upload-text">Drag & drop or <strong>browse</strong></p>
+                <p class="upload-formats">JPG, PNG, WEBP — front-facing, good lighting</p>
+                <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp" onchange="handlePhotoUpload(event)" style="display: none;">
+            </div>
+            <div class="photo-preview" id="photoPreview" style="display: none; margin-top: 16px; text-align: center;">
+                <img id="photoPreviewImg" style="max-width: 200px; max-height: 200px; border-radius: 12px; border: 2px solid var(--accent);">
+                <button class="btn-remove" onclick="clearPhoto()" style="margin-left: 12px;" aria-label="Remove photo">✕</button>
+            </div>
+        </div>
+
+        <!-- Checkout Step (Step 3 for voice, Step 4 for avatar) -->
         <div id="checkout-step" class="section" style="opacity: 0.5; pointer-events: none;">
-            <h2 class="section-title">Step 3 — Complete Your Order</h2>
+            <h2 class="section-title" id="checkoutStepTitle">Step 3 — Complete Your Order</h2>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <span style="font-weight: 600;">Voice Clone</span>
-                    <p style="color: var(--text-muted); font-size: 13px;">Hear them speak your message</p>
+                    <span style="font-weight: 600;" id="checkoutServiceName">Voice Clone</span>
+                    <p style="color: var(--text-muted); font-size: 13px;" id="checkoutServiceDesc">Hear them speak your message</p>
                 </div>
-                <span style="font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;">$49</span>
+                <span style="font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;" id="checkoutPrice">$49</span>
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Your Email</label>
@@ -421,7 +441,26 @@
     let analyser = null;
     let animationId = null;
     let selectedStyle = 'natural';
+    let photoBlob = null;
+    let photoPreviewUrl = null;
     const MAX_DURATION = 60; // 60 seconds max for high-quality clone
+
+    // --- Detect avatar mode from URL ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceMode = urlParams.get('service') || 'voice';
+    const isAvatarMode = serviceMode === 'avatar';
+
+    // Configure page for avatar mode
+    if (isAvatarMode) {
+        document.getElementById('pageTitle').textContent = 'Create Their AI Avatar';
+        document.getElementById('pageSubtitle').textContent = 'Record their voice, write a message, and upload their photo — we\'ll bring them back to life in video.';
+        document.getElementById('step4').style.display = '';
+        document.getElementById('photo-step').style.display = '';
+        document.getElementById('checkoutStepTitle').textContent = 'Step 4 — Complete Your Order';
+        document.getElementById('checkoutServiceName').textContent = 'AI Avatar';
+        document.getElementById('checkoutServiceDesc').textContent = 'Watch them speak your message in video';
+        document.getElementById('checkoutPrice').textContent = '$99';
+    }
 
     // --- Speaking Style ---
     function selectStyle(style) {
@@ -605,6 +644,43 @@
         lockStep(2);
     }
 
+    // --- Photo Upload (Avatar mode) ---
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file (JPG, PNG, WEBP)');
+            return;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+            alert('Photo must be under 25MB');
+            return;
+        }
+        photoBlob = file;
+        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+        photoPreviewUrl = URL.createObjectURL(file);
+        document.getElementById('photoPreviewImg').src = photoPreviewUrl;
+        document.getElementById('photoPreview').style.display = 'flex';
+        document.getElementById('photoUploadZone').style.display = 'none';
+
+        // Unlock checkout (step 4 in avatar mode)
+        document.getElementById('checkout-step').style.opacity = '1';
+        document.getElementById('checkout-step').style.pointerEvents = 'auto';
+        document.getElementById('step3').classList.add('done');
+        document.getElementById('step4').classList.add('active');
+        document.getElementById('checkoutBtn').disabled = false;
+    }
+
+    function clearPhoto() {
+        photoBlob = null;
+        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+        photoPreviewUrl = null;
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoUploadZone').style.display = '';
+        document.getElementById('photoFileInput').value = '';
+        lockStep(4);
+    }
+
     // --- Steps ---
     function unlockStep(step) {
         if (step >= 2) {
@@ -624,10 +700,26 @@
             lockStep(3);
         }
         if (step === 3) {
+            if (isAvatarMode) {
+                // Lock photo step
+                document.getElementById('photo-step').style.opacity = '0.5';
+                document.getElementById('photo-step').style.pointerEvents = 'none';
+                document.getElementById('step2').classList.remove('done');
+                document.getElementById('step3').classList.remove('active');
+                lockStep(4);
+            } else {
+                document.getElementById('checkout-step').style.opacity = '0.5';
+                document.getElementById('checkout-step').style.pointerEvents = 'none';
+                document.getElementById('step2').classList.remove('done');
+                document.getElementById('step3').classList.remove('active');
+                document.getElementById('checkoutBtn').disabled = true;
+            }
+        }
+        if (step === 4) {
             document.getElementById('checkout-step').style.opacity = '0.5';
             document.getElementById('checkout-step').style.pointerEvents = 'none';
-            document.getElementById('step2').classList.remove('done');
-            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step3').classList.remove('done');
+            document.getElementById('step4').classList.remove('active');
             document.getElementById('checkoutBtn').disabled = true;
         }
     }
@@ -638,13 +730,26 @@
         document.getElementById('charCount').textContent = `${text.length} / 500`;
 
         if (text.trim().length >= 10) {
-            document.getElementById('checkout-step').style.opacity = '1';
-            document.getElementById('checkout-step').style.pointerEvents = 'auto';
-            document.getElementById('step2').classList.add('done');
-            document.getElementById('step3').classList.add('active');
-            document.getElementById('checkoutBtn').disabled = false;
+            if (isAvatarMode) {
+                // Avatar mode: unlock photo step (step 3)
+                document.getElementById('photo-step').style.opacity = '1';
+                document.getElementById('photo-step').style.pointerEvents = 'auto';
+                document.getElementById('step2').classList.add('done');
+                document.getElementById('step3').classList.add('active');
+            } else {
+                // Voice mode: unlock checkout (step 3)
+                document.getElementById('checkout-step').style.opacity = '1';
+                document.getElementById('checkout-step').style.pointerEvents = 'auto';
+                document.getElementById('step2').classList.add('done');
+                document.getElementById('step3').classList.add('active');
+                document.getElementById('checkoutBtn').disabled = false;
+            }
         } else {
-            lockStep(3);
+            if (isAvatarMode) {
+                lockStep(3);
+            } else {
+                lockStep(3);
+            }
         }
     }
 
@@ -664,6 +769,10 @@
         }
         if (!audioBlob) {
             showStatus('Please record or upload a voice sample first.', 'error');
+            return;
+        }
+        if (isAvatarMode && !photoBlob) {
+            showStatus('Please upload a photo for the avatar.', 'error');
             return;
         }
         if (message.length < 10) {
@@ -690,6 +799,22 @@
             if (!uploadResp.ok) throw new Error('Upload failed');
             const uploadData = await uploadResp.json();
 
+            // Upload photo if avatar mode
+            let photoUploadUrl = null;
+            if (isAvatarMode && photoBlob) {
+                btn.textContent = 'Uploading photo...';
+                const photoFormData = new FormData();
+                const photoExt = photoBlob.type?.includes('png') ? 'png' : 'jpg';
+                photoFormData.append('file', photoBlob, `avatar-photo.${photoExt}`);
+                const photoUploadResp = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: photoFormData,
+                });
+                if (!photoUploadResp.ok) throw new Error('Photo upload failed');
+                const photoUploadData = await photoUploadResp.json();
+                photoUploadUrl = photoUploadData.url;
+            }
+
             btn.textContent = 'Redirecting to payment...';
 
             // Create checkout session
@@ -697,10 +822,12 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    service: 'voice',
+                    service: isAvatarMode ? 'avatar' : 'voice',
                     customerName: name,
                     customerEmail: email,
                     uploadUrl: uploadData.url,
+                    voiceSampleUrl: uploadData.url,
+                    photoUrl: photoUploadUrl || '',
                     message: `[style:${selectedStyle}] ${message}`,
                 }),
             });

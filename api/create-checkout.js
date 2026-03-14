@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { service, customerName, customerEmail, uploadUrl, message } = req.body;
+    const { service, customerName, customerEmail, uploadUrl, message, photoUrl, voiceSampleUrl } = req.body;
 
     if (!service || !PRODUCTS[service]) {
       return res.status(400).json({ error: 'Invalid service selected' });
@@ -80,7 +80,9 @@ export default async function handler(req, res) {
         service,
         customerName: customerName || '',
         uploadUrl: uploadUrl || '',
-        message: message || ''
+        message: message || '',
+        photoUrl: photoUrl || '',
+        voiceSampleUrl: voiceSampleUrl || '',
       }
     });
 

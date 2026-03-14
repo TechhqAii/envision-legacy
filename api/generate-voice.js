@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
 // --- STEP 1: Create voice clone model ---
 async function handleClone(res, body) {
-  const { voiceSampleUrl, customerEmail, customerName, voiceMessage } = body;
+  const { voiceSampleUrl, customerEmail, customerName, voiceMessage, photoUrl } = body;
 
   if (!voiceSampleUrl || !customerEmail || !voiceMessage) {
     return res.status(400).json({ error: 'Missing voiceSampleUrl, customerEmail, or voiceMessage' });
@@ -145,6 +145,7 @@ async function handleClone(res, body) {
       voiceMessage,
       customerEmail,
       customerName,
+      photoUrl: photoUrl || null,
       pollCount: 1,
     }, '30s');
 
@@ -176,7 +177,7 @@ function parseStyleFromMessage(message) {
 }
 
 async function handleSynthesize(res, body) {
-  const { modelId, voiceMessage, customerEmail, customerName, pollCount = 0 } = body;
+  const { modelId, voiceMessage, customerEmail, customerName, photoUrl, pollCount = 0 } = body;
   const apiKey = process.env.FISH_AUDIO_API_KEY;
 
   const { style, text } = parseStyleFromMessage(voiceMessage);
@@ -217,7 +218,7 @@ async function handleSynthesize(res, body) {
       if (ttsResp.status === 400 || ttsResp.status === 404 || ttsResp.status === 422) {
         console.log(`   Model not ready, retrying...`);
         await schedulePollViaQStash({ ...body, pollCount: pollCount + 1 }, '10s');
-        return res.status(200).json({ status: 'waiting' });
+      return res.status(200).json({ status: 'waiting' });
       }
       throw new Error(`TTS failed (${ttsResp.status}): ${errText.substring(0, 300)}`);
     }
@@ -244,8 +245,40 @@ async function handleSynthesize(res, body) {
 
     console.log(`   ☁️ Uploaded to Blob: ${blob.url}`);
 
-    // Send delivery email
+    // Send delivery email (voice clone)
     await sendDeliveryEmails(customerEmail, customerName, blob.url);
+
+    // Phase 4: If this is an avatar/bundle order, chain to avatar generation
+    if (photoUrl) {
+      console.log(`   🎭 Chaining to avatar generation (photo: ${photoUrl})`);
+      try {
+        const avatarQstashResp = await fetch(`${QSTASH_API}/publish/${BASE_URL}/api/generate-avatar`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Upstash-Delay': '5s',
+            'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          },
+          body: JSON.stringify({
+            audioUrl: blob.url,
+            photoUrl,
+            customerEmail,
+            customerName,
+          }),
+        });
+
+        if (avatarQstashResp.ok) {
+          const avatarData = await avatarQstashResp.json();
+          console.log(`   ✅ Avatar generation queued (messageId: ${avatarData.messageId})`);
+        } else {
+          const avatarErr = await avatarQstashResp.text();
+          console.error(`   ⚠️ Avatar queue failed: ${avatarErr.substring(0, 200)}`);
+        }
+      } catch (avatarErr) {
+        console.error('Failed to queue avatar generation:', avatarErr.message);
+      }
+    }
 
     return res.status(200).json({ success: true, audioUrl: blob.url });
   } catch (err) {

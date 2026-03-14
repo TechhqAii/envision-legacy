@@ -98,8 +98,18 @@ export default async function handler(req, res) {
     }
 
     // Phase 3: Trigger voice clone generation via QStash
-    if (service === 'voice' || service === 'bundle') {
+    // For avatar/bundle orders, pass photoUrl so voice pipeline chains to avatar
+    if (service === 'voice' || service === 'avatar' || service === 'bundle') {
       const baseUrl = 'https://envision-legacy.vercel.app';
+
+      // For avatar orders, the uploadUrl contains the voice sample
+      // The photo is stored separately in metadata as photoUrl
+      const voiceSampleUrl = service === 'avatar'
+        ? session.metadata.voiceSampleUrl || uploadUrl
+        : uploadUrl;
+      const photoUrl = service === 'avatar' || service === 'bundle'
+        ? session.metadata.photoUrl || null
+        : null;
 
       try {
         const targetUrl = baseUrl + '/api/generate-voice';
@@ -112,10 +122,11 @@ export default async function handler(req, res) {
             'Upstash-Forward-Authorization': `Bearer ${process.env.INTERNAL_API_SECRET}`,
           },
           body: JSON.stringify({
-            voiceSampleUrl: uploadUrl,
+            voiceSampleUrl,
             customerEmail: email,
             customerName,
             voiceMessage: message || 'I love you and I miss you. I am always with you.',
+            photoUrl,
           }),
         });
 
