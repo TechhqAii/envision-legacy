@@ -69,10 +69,6 @@ export default async function handler(req, res) {
 
       try {
         const targetUrl = baseUrl + '/api/generate-animation';
-        console.log(`📬 Publishing to QStash: ${targetUrl}`);
-        console.log(`   QSTASH_TOKEN set: ${!!process.env.QSTASH_TOKEN}`);
-        console.log(`   INTERNAL_API_SECRET set: ${!!process.env.INTERNAL_API_SECRET}`);
-
         const qstashUrl = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
         const qstashResp = await fetch(qstashUrl + '/publish/' + targetUrl, {
           method: 'POST',
@@ -88,12 +84,12 @@ export default async function handler(req, res) {
             prompt: message || undefined,
           }),
         });
-        const qText = await qstashResp.text();
-        console.log(`   QStash response (${qstashResp.status}): ${qText}`);
+
         if (!qstashResp.ok) {
-          console.error(`   ❌ QStash publish failed: ${qstashResp.status} ${qText}`);
+          const qErr = await qstashResp.text();
+          console.error(`QStash publish failed (${qstashResp.status}):`, qErr);
         } else {
-          const qData = JSON.parse(qText);
+          const qData = await qstashResp.json();
           console.log(`   ✅ Animation queued (messageId: ${qData.messageId})`);
         }
       } catch (err) {
