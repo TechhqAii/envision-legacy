@@ -299,7 +299,7 @@
                 </div>
 
                 <div class="record-area">
-                    <div class="timer" id="timer">0:00 / 0:20</div>
+                    <div class="timer" id="timer">0:00 / 1:00</div>
                     <button class="record-btn" id="recordBtn" onclick="toggleRecording()" aria-label="Record voice"></button>
                     <span class="record-label" id="recordLabel">Tap to Record</span>
                     <div class="waveform-container">
@@ -459,9 +459,11 @@
     function updateTimer() {
         const mins = Math.floor(elapsed / 60);
         const secs = elapsed % 60;
+        const maxMins = Math.floor(MAX_DURATION / 60);
+        const maxSecs = MAX_DURATION % 60;
         const el = document.getElementById('timer');
-        el.textContent = `${mins}:${secs.toString().padStart(2, '0')} / 0:${MAX_DURATION}`;
-        el.classList.toggle('warning', elapsed >= MAX_DURATION - 5);
+        el.textContent = `${mins}:${secs.toString().padStart(2, '0')} / ${maxMins}:${maxSecs.toString().padStart(2, '0')}`;
+        el.classList.toggle('warning', elapsed >= MAX_DURATION - 10);
     }
 
     // --- Waveform ---
