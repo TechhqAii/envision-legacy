@@ -109,7 +109,7 @@ async function handleClone(res, body) {
     // Title field
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="visibility"\r\n\r\nprivate`);
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="type"\r\n\r\ntts`);
-    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="train_mode"\r\n\r\nfull`);
+    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="train_mode"\r\n\r\nfast`);
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\n${modelTitle}`);
 
     // Audio file
