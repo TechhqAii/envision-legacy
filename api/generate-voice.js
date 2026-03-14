@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FISH_API = 'https://api.fish.audio';
 const QSTASH_API = process.env.QSTASH_URL || 'https://qstash.upstash.io/v2';
 const BASE_URL = 'https://envision-legacy.vercel.app';
-const MAX_POLLS = 20; // 20 × 10s = ~3 min max
+const MAX_POLLS = 40; // 40 × 15s = ~10 min max (full mode takes ~5 min)
 
 /** Escape HTML for email templates. */
 function escapeHtml(str) {
@@ -109,7 +109,7 @@ async function handleClone(res, body) {
     // Title field
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="visibility"\r\n\r\nprivate`);
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="type"\r\n\r\ntts`);
-    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="train_mode"\r\n\r\nfast`);
+    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="train_mode"\r\n\r\nfull`);
     parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\n${modelTitle}`);
 
     // Audio file
@@ -139,13 +139,14 @@ async function handleClone(res, body) {
     console.log(`   ✅ Model created: ${newModelId}`);
 
     // Schedule synthesis (give model a moment to be ready)
+    // Full mode takes ~5 min, give it time before first synthesis attempt
     await schedulePollViaQStash({
       modelId: newModelId,
       voiceMessage,
       customerEmail,
       customerName,
       pollCount: 1,
-    }, '5s');
+    }, '30s');
 
     return res.status(200).json({ success: true, status: 'cloning', modelId: newModelId });
   } catch (err) {
