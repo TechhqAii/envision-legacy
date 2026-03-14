@@ -94,6 +94,7 @@ export default async function handler(req, res) {
   // Route based on phase
   const { phase } = body;
   if (phase === 'poll_animation') return handlePollAnimation(res, body);
+  if (phase === 'start_next') return handleStartNextPhoto(res, body);
   if (phase === 'build_album') return handleBuildAlbum(res, body);
   return handleStartPhotoBook(res, body);
 }
@@ -133,28 +134,21 @@ async function handleStartPhotoBook(res, body) {
 
     const { base64, mimeType } = await downloadImageAsBase64(currentPhoto.url);
 
+    const motionPrompt = 'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
+
     const generateResp = await fetch(
-      `${GEMINI_API}/models/${VEO_MODEL}:generateContent?key=${apiKey}`,
+      `${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  inlineData: { mimeType, data: base64 },
-                },
-                {
-                  text: 'Bring this photograph to life with subtle, gentle motion. Add natural movement like soft breathing, gentle wind, flickering light, or slight swaying — keep it emotional and realistic, not cartoonish.',
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseModalities: ['VIDEO'],
-          },
+          instances: [{
+            prompt: motionPrompt,
+            image: { bytesBase64Encoded: base64, mimeType },
+          }],
         }),
       }
     );
@@ -167,10 +161,13 @@ async function handleStartPhotoBook(res, body) {
     const genData = await generateResp.json();
 
     // Check if the response has a video directly or needs polling
-    const videoPart = genData.candidates?.[0]?.content?.parts?.find(p => p.fileData);
-    if (videoPart) {
+    const directUri =
+      genData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
+      genData.generatedSamples?.[0]?.video?.uri;
+
+    if (directUri) {
       // Video returned immediately
-      const videoUrl = await downloadAndReupload(videoPart.fileData.fileUri);
+      const videoUrl = await downloadAndReupload(directUri);
       results.push({ ...currentPhoto, videoUrl });
       console.log(`   ✅ Photo 1 animated immediately`);
 
@@ -196,7 +193,7 @@ async function handleStartPhotoBook(res, body) {
       }
     } else {
       // Needs polling — extract operation name
-      const opName = genData.name;
+      const opName = genData.name || genData.operationName;
       if (!opName) {
         throw new Error('No operation name or video in response');
       }
@@ -260,8 +257,8 @@ async function handlePollAnimation(res, body) {
 
   try {
     const statusResp = await fetch(
-      `${GEMINI_API}/operations/${operationName}?key=${apiKey}`,
-      { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+      `${GEMINI_API}/${operationName}`,
+      { method: 'GET', headers: { 'x-goog-api-key': apiKey } }
     );
 
     if (!statusResp.ok) {
@@ -272,11 +269,17 @@ async function handlePollAnimation(res, body) {
     const statusData = await statusResp.json();
 
     if (statusData.done) {
-      // Check for video
-      const videoPart = statusData.response?.candidates?.[0]?.content?.parts?.find(p => p.fileData);
+      if (statusData.error) {
+        throw new Error(`Veo error: ${JSON.stringify(statusData.error).substring(0, 200)}`);
+      }
 
-      if (videoPart) {
-        const videoUrl = await downloadAndReupload(videoPart.fileData.fileUri);
+      // Check for video
+      const videoUri =
+        statusData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
+        statusData.response?.generatedSamples?.[0]?.video?.uri;
+
+      if (videoUri) {
+        const videoUrl = await downloadAndReupload(videoUri);
         results.push({ ...photos[photoIndex], videoUrl });
         console.log(`   ✅ Photo ${photoIndex + 1} animated: ${videoUrl.substring(0, 60)}...`);
       } else {
@@ -334,22 +337,21 @@ async function handleStartNextPhoto(res, body) {
   try {
     const { base64, mimeType } = await downloadImageAsBase64(currentPhoto.url);
 
+    const motionPrompt = 'Gentle lifelike motion as if reliving a cherished moment. Soft breathing, natural blinking, slight warm smile, subtle head movement. Preserve every detail of the person face, clothing, and background. Emotional and cinematic quality.';
+
     const generateResp = await fetch(
-      `${GEMINI_API}/models/${VEO_MODEL}:generateContent?key=${apiKey}`,
+      `${GEMINI_API}/models/${VEO_MODEL}:predictLongRunning`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { inlineData: { mimeType, data: base64 } },
-                { text: 'Bring this photograph to life with subtle, gentle motion. Add natural movement like soft breathing, gentle wind, flickering light, or slight swaying — keep it emotional and realistic, not cartoonish.' },
-              ],
-            },
-          ],
-          generationConfig: { responseModalities: ['VIDEO'] },
+          instances: [{
+            prompt: motionPrompt,
+            image: { bytesBase64Encoded: base64, mimeType },
+          }],
         }),
       }
     );
@@ -360,7 +362,7 @@ async function handleStartNextPhoto(res, body) {
     }
 
     const genData = await generateResp.json();
-    const opName = genData.name;
+    const opName = genData.name || genData.operationName;
 
     if (opName) {
       await schedulePoll({
@@ -374,10 +376,12 @@ async function handleStartNextPhoto(res, body) {
       }, '15s');
     } else {
       // Direct result
-      const videoPart = genData.candidates?.[0]?.content?.parts?.find(p => p.fileData);
+      const directUri =
+        genData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ||
+        genData.generatedSamples?.[0]?.video?.uri;
       const results = JSON.parse(resultsStr);
-      if (videoPart) {
-        const videoUrl = await downloadAndReupload(videoPart.fileData.fileUri);
+      if (directUri) {
+        const videoUrl = await downloadAndReupload(directUri);
         results.push({ ...currentPhoto, videoUrl });
       } else {
         results.push({ ...currentPhoto, videoUrl: null, error: 'No video' });
