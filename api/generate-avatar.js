@@ -243,24 +243,14 @@ async function handlePollVideo(res, body) {
 
 // --- Upload asset to HeyGen ---
 async function uploadAssetToHeyGen(apiKey, buffer, filename, contentType) {
-  const boundary = `----HeyGenUpload${Date.now()}`;
-
-  const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`;
-  const footer = `\r\n--${boundary}--`;
-
-  const fullBody = Buffer.concat([
-    Buffer.from(header),
-    buffer,
-    Buffer.from(footer),
-  ]);
-
+  // HeyGen expects raw binary data with Content-Type set to the file MIME type
   const resp = await fetch(`${HEYGEN_UPLOAD}/v1/asset`, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
-      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Type': contentType,
     },
-    body: fullBody,
+    body: buffer,
   });
 
   if (!resp.ok) {
@@ -269,6 +259,7 @@ async function uploadAssetToHeyGen(apiKey, buffer, filename, contentType) {
   }
 
   const data = await resp.json();
+  console.log(`   Upload response: ${JSON.stringify(data).substring(0, 200)}`);
   // The asset ID could be in different fields depending on the asset type
   return data.data?.id || data.data?.asset_id || data.data?.talking_photo_id;
 }
